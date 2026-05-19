@@ -18,7 +18,7 @@
     "@types/pg": "^8.20.0",
     "@vercel/postgres": "latest",
     "dotenv": "^16.0.0",
-    "next": "^15.3.2",
+    "next": "^15.5.18",
     "pg": "^8.21.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",

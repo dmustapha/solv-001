@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --arc-blue:    #3B82F6;
+    --circle-blue: #2563EB;
+    --usyc-gold:   #D97706;
+    --positive:    #10B981;
+    --negative:    #EF4444;
+  }
+}
+
+@layer utilities {
+  .font-mono { font-family: var(--font-mono), monospace; }
+  .scrollbar-thin { scrollbar-width: thin; }
+}

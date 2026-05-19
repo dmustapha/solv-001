@@ -1,0 +1,233 @@
+{
+  "schema_version": "2.0",
+  "working_dir": "/Users/MAC/agora-agents",
+  "created_at": "2026-05-18T00:00:00Z",
+  "updated_at": "2026-05-19T00:00:00Z",
+  "hackathon": {
+    "name": "Agora Agents Hackathon",
+    "url": "https://agora.thecanteenapp.com/",
+    "platform": "other",
+    "submission_url": "https://forms.gle/hFPM2t4Jt1zGfqzM7",
+    "hard_deadline": "2026-05-25T23:59:00Z",
+    "videoLengthRequirement": 180,
+    "tracks": [],
+    "judging_criteria": {
+      "Agentic Sophistication": 30,
+      "Traction": 30,
+      "Circle Tool Usage": 20,
+      "Innovation": 20
+    },
+    "sponsors": [
+      "Canteen",
+      "Circle",
+      "Arc"
+    ],
+    "prize_pool": 50000,
+    "brief_path": "~/.claude/skills/hackathon-briefs/agora-canteen.md"
+  },
+  "manifest": {
+    "research_depth": 8,
+    "team": [
+      {
+        "name": "Damilola Mustapha",
+        "github": "dmustapha",
+        "twitter": "@capitanoo23"
+      }
+    ],
+    "demoFormat": "recorded",
+    "demo": {
+      "logo_description": null,
+      "music_vibe": "none",
+      "creative_overrides": "let skill decide"
+    },
+    "dry_run": false,
+    "copilot_pat_available": false
+  },
+  "checkpoints": {
+    "cp1": "answered",
+    "cp2": "pending",
+    "cp3": "pending",
+    "cp4": "pending",
+    "cp5": "pending"
+  },
+  "pipeline": {
+    "phases": {
+      "intel": {
+        "status": "skipped",
+        "skipped_reason": "brief at agora-canteen.md serves as intel",
+        "completed_at": "2026-05-18T00:00:00Z"
+      },
+      "warroom": {
+        "status": "complete",
+        "dispatched_at": "2026-05-18T07:59:19Z",
+        "completed_at": "2026-05-19T00:00:00Z"
+      },
+      "forge": {
+        "status": "complete",
+        "dispatched_at": "2026-05-19T00:50:00Z",
+        "completed_at": "2026-05-19T08:00:00Z"
+      },
+      "critique": {
+        "status": "complete",
+        "dispatched_at": "2026-05-19T11:00:00Z",
+        "completed_at": "2026-05-19T13:00:00Z"
+      },
+      "url_preverify": {
+        "status": "complete",
+        "dispatched_at": "2026-05-19T13:05:00Z",
+        "completed_at": "2026-05-19T13:10:00Z",
+        "findings": {
+          "github_repo_dmustapha_agent-treasury": "AVAILABLE",
+          "vercel_agent-treasury": "TAKEN — different project (Chainlink/Base, not Circle/Arc). Use solv-001 instead.",
+          "vercel_solv-001": "AVAILABLE — recommended project name",
+          "circle_api": "REACHABLE",
+          "anthropic_api": "REACHABLE",
+          "circle_gateway_testnet": "REACHABLE",
+          "arc_canteen_cli": "LIVE — block 0x290c184 confirmed",
+          "competitive_note": "agent-treasury.vercel.app is a different project: agent treasuries on Base/Chainlink (BTC+ETH yield/borrow). Different chain + tool stack. Validates category, not a direct competitor."
+        }
+      },
+      "build": {
+        "status": "running",
+        "dispatched_at": "2026-05-19T19:05:26Z",
+        "completed_at": null
+      },
+      "debug": {
+        "status": "pending",
+        "dispatched_at": null,
+        "completed_at": null
+      },
+      "wire": {
+        "status": "pending",
+        "dispatched_at": null,
+        "completed_at": null
+      },
+      "verify_milestone": {
+        "status": "pending",
+        "dispatched_at": null,
+        "completed_at": null
+      },
+      "design": {
+        "status": "pending",
+        "dispatched_at": null,
+        "completed_at": null
+      },
+      "stress_test": {
+        "status": "pending",
+        "dispatched_at": null,
+        "completed_at": null
+      },
+      "polish": {
+        "status": "pending",
+        "dispatched_at": null,
+        "completed_at": null
+      },
+      "deploy": {
+        "status": "pending",
+        "dispatched_at": null,
+        "completed_at": null
+      },
+      "livetest": {
+        "status": "pending",
+        "dispatched_at": null,
+        "completed_at": null
+      },
+      "demo_rehearsal": {
+        "status": "pending",
+        "dispatched_at": null,
+        "completed_at": null
+      },
+      "demo": {
+        "status": "pending",
+        "dispatched_at": null,
+        "completed_at": null
+      },
+      "package": {
+        "status": "pending",
+        "dispatched_at": null,
+        "completed_at": null
+      },
+      "verify_preflight": {
+        "status": "pending",
+        "dispatched_at": null,
+        "completed_at": null
+      }
+    },
+    "last_completed": "url_preverify",
+    "next_expected": "build",
+    "critiqueState": {
+      "status": "complete",
+      "competitive_assessment": "differentiated",
+      "narrative_score": "adequate",
+      "elevations_approved": 5,
+      "elevations_applied": 5,
+      "critical_findings": [
+        "Paymaster false claim removed from demo Scene 9 (E-1)",
+        "Demo trimmed from 5min to ~3min — 7 scenes (E-3)",
+        "demo_mode Try Demo Task button added to Judge Experience (E-2)",
+        "A2A auto-caller promoted to Day 2 primary feature (E-4)",
+        "F-002 decision type fixed ACCEPT/DEFER/REJECT (E-5)"
+      ],
+      "report_path": "/Users/MAC/agora-agents/solv-001/CRITIQUE-REPORT.md",
+      "state_path": "/Users/MAC/agora-agents/solv-001/.critique-state.json"
+    },
+    "current_phase": "build"
+  },
+  "warroomState": {
+    "status": "complete",
+    "winner": "solv-001",
+    "winner_score": "9.22",
+    "backup": "AlphaStream",
+    "backup_score": "8.43",
+    "ideas_proposed": 5,
+    "ideas_killed": 2,
+    "health_check": "PASS",
+    "selectedIdea": "solv-001",
+    "warroom_version": "V3",
+    "v1_winner_excluded": "MarketMesh (prior_warroom_repeat)",
+    "v2_winner_excluded": "ReasonTrace (Traction 6/10 — V3 mandate required fix)",
+    "trac_dissent": "AlphaStream Traction 9/10 structurally superior; AgentTreasury Traction 7/10 conditional on Day 0 recruitment"
+  },
+  "forgeState": {
+    "status": "complete",
+    "projectName": "solv-001",
+    "project_type": "agent",
+    "stack": "TypeScript — Next.js 15, Tailwind CSS, viem, @circle-fin/developer-controlled-wallets, @circle-fin/x402-batching, @modelcontextprotocol/sdk",
+    "hasFrontend": true,
+    "hasContracts": false,
+    "prdLines": 858,
+    "architectureLines": 4008,
+    "planLines": 1745,
+    "featureObservablesPath": "/Users/MAC/agora-agents/solv-001/FEATURE-OBSERVABLES.md"
+  },
+  "artifacts": {
+    "forge": {
+      "prd_path": "/Users/MAC/agora-agents/solv-001/PRD.md",
+      "architecture_path": "/Users/MAC/agora-agents/solv-001/ARCHITECTURE.md",
+      "plan_path": "/Users/MAC/agora-agents/solv-001/PLAN.md",
+      "state_path": "/Users/MAC/agora-agents/solv-001/.forge-state.json"
+    },
+    "warroom": {
+      "verdict_file": "/Users/MAC/agora-agents/warroom/FINAL-VERDICT-V3.md",
+      "winner_brief": "/Users/MAC/agora-agents/warroom/WINNER-BRIEF.md",
+      "state_path": "/Users/MAC/agora-agents/warroom/.warroom-state.json",
+      "ideas_path": "/Users/MAC/agora-agents/research/ideas.md"
+    }
+  },
+  "credentials_checked": {
+    "TELEGRAM_BOT_TOKEN": true,
+    "EVM_PRIVATE_KEY": true,
+    "ANTHROPIC_API_KEY": true,
+    "DISCORD": false,
+    "TWITTER": false,
+    "COLOSSEUM_COPILOT_PAT": false
+  },
+  "checkpoints_answered": {
+    "post_forge_credentials": true
+  },
+  "dispatch_context": {
+    "target_skill": "hackathon-build",
+    "mode": "fresh",
+    "attempt": 1
+  }
+}

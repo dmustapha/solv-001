@@ -1,0 +1,28 @@
+{
+  "project": "solv-001",
+  "currentPhase": "pre-build",
+  "currentStep": "M.1",
+  "currentSubStep": "M.1.1",
+  "status": "in-progress",
+  "autonomous_mode": true,
+  "completedSteps": [],
+  "fileGroups": {},
+  "deviations": [],
+  "contractAddresses": {},
+  "env": {
+    "ANTHROPIC_API_KEY": "set",
+    "CIRCLE_API_KEY": "set",
+    "CIRCLE_ENTITY_SECRET": "set",
+    "EXPENSE_WALLET_PRIVATE_KEY": "set",
+    "ARC_RPC_URL": "set",
+    "NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID": "set"
+  },
+  "devPort": 3000,
+  "depsVerified": false,
+  "verification_commands": [],
+  "screenshot_paths": [],
+  "context_percentage": 15,
+  "timestamp": "2026-05-19T19:10:00Z",
+  "phase_ledger": [],
+  "expected_phases": ["pre-build", "phase-0", "phase-1", "phase-2", "phase-3", "phase-4", "phase-5", "phase-6"]
+}

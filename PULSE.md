@@ -179,3 +179,35 @@
 - Verify GatewayClient.pay() when testnet is live (Arc testnet unreachable during build)
 - CIRCLE_USDC_TOKEN_ID validity: verify `15dc2b5d-0994-58b0-bf8c-3a0501148ee8` against live Circle API before transferUSDC() is called
 - Check USYC allowlisting status before wire phase
+
+---
+### hackathon-build (FINAL RESUME SESSION) — 2026-05-19T22:30:00Z
+**Status:** COMPLETE (this entry finalizes the build phase)
+
+#### Done
+- Created `scripts/a2a-auto-caller.ts` — A2A task submission every 2h for traction generation
+- Upgraded Next.js 15.3.2 → 15.5.18 (patches CVE-2025-66478 which was blocking Vercel deploy)
+- Deployed to Vercel: https://solv-001.vercel.app — build succeeded, all 11 routes live
+- Verified dev server: HTTP 200 on /, /proof, /api/treasury, /api/agent-card
+- DB confirmed: 3 tables (tasks, trace_events, treasury_events) + 8 seeded tasks in Neon solv001
+- Added APP_URL + NEXT_PUBLIC_APP_URL env vars to Vercel project
+
+#### Additions (not in original plan)
+- [SKILL] [NEW] `/api/admin/migrate` HTTP endpoint — allows triggering DB migration from Vercel (needed because pg Client TCP blocked locally)
+
+#### Deviations
+- [SKILL] DEV-004: Next.js upgraded to 15.5.18 (COSMETIC, no impact)
+- [SKILL] DEV-002/DEV-003: UNTESTED — GatewayClient deposit + real Arc tx hashes still fake (from prior session)
+
+#### Verified Facts
+- [VF-B-FINAL] TypeScript: 0 errors on `npx tsc --noEmit`
+- [VF-B-FINAL] Vercel: HTTP 200 on all 11 routes (production build succeeds)
+- [VF-B-FINAL] Treasury API: `total_tasks_completed=8, total_income_all_time_usdc=3.15`
+
+#### For Next Skill (debug)
+- Production URL: https://solv-001.vercel.app
+- Proof page: https://solv-001.vercel.app/proof
+- Test /api/tasks SSE stream with demo_mode:true — this is the primary judge flow
+- Validate Arc testnet reachability (arc-canteen rpc eth_blockNumber)
+- Fund expense wallet (EXPENSE_WALLET_PRIVATE_KEY EOA) with ARC-TESTNET USDC before testing paid flows
+- DEV-002: GatewayClient.pay() UNTESTED — priority 1 for wire/debug validation

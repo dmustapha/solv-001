@@ -17,3 +17,8 @@
 [2026-05-19T19:11:12Z] [build] [dispatch] [started] Spawning isolated claude session (attempt 2, mode compliance-fix)
 [2026-05-19T19:11:12Z] [build] [compliance-fix] [escalated] 2 cycles exhausted — continuing with gaps
 [2026-05-19T19:11:12Z] [build] [post] [info] Build committed to git
+[2026-05-19T19:11:12Z] [build] [dispatch] [complete] Phase complete (exit 1)
+[2026-05-19T19:12:07Z] [pipeline-runner] [start] [started] FSM loop starting
+[2026-05-19T19:12:08Z] [build] [dispatch] [started] Spawning isolated claude session (attempt 1, mode fresh)
+[2026-05-19T21:15:31Z] [pipeline-runner] [start] [started] FSM loop starting
+[2026-05-19T21:15:31Z] [build] [dispatch] [started] Spawning isolated claude session (attempt 1, mode fresh)

@@ -1026,3 +1026,22 @@ Your state file IS your checkpoint.
 /Users/MAC/.claude/skills/utils/pipeline-runner.sh: line 906: : No such file or directory
 /Users/MAC/.claude/skills/utils/pipeline-runner.sh: line 906: : No such file or directory
 /Users/MAC/.claude/skills/utils/pipeline-runner.sh: line 906: : No such file or directory
+The build phase is **complete**. All state files were committed in `077ce67`. Here's the handoff summary for the next skill:
+
+---
+
+**What just happened:** The `hackathon-build` skill completed all 5 phases of the solv-001 project — 36 source files written, Circle wallet provisioned, Neon DB migrated + seeded (8 tasks, 5 payer wallets, $3.15 income), dev server verified 200 on all routes, submission artifacts populated, and deployed to `https://solv-001.vercel.app`.
+
+**Next skill: `hackathon-debug`**
+
+Key blockers to resolve in debug:
+1. **GatewayClient.pay() [UNVERIFIED]** — Arc testnet was unreachable during build; expense wallet has 0 USDC. Wire skill must fund before this can be validated.
+2. **Arc testnet connectivity** — All seeded tasks use demo/fake tx hashes. Real on-chain transactions needed for traction proof.
+3. **CIRCLE_USDC_TOKEN_ID** — Sourced from arc-commerce sample (`15dc2b5d-0994-58b0-bf8c-3a0501148ee8`); needs validation against live Circle API before `transferUSDC()` is called.
+
+Start debug with:
+```bash
+npm run typecheck  # baseline: 0 errors
+curl -N -X POST http://localhost:3000/api/tasks -H "Content-Type: application/json" \
+  -d '{"task":"vet wallet","task_type":"wallet_intelligence","payer_wallet":"0x1234","demo_mode":true}'
+```

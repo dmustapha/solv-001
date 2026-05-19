@@ -89,8 +89,8 @@
       },
       "build": {
         "status": "complete",
-        "dispatched_at": "2026-05-19T19:11:12Z",
-        "completed_at": "2026-05-19T19:11:12Z"
+        "dispatched_at": "2026-05-19T21:16:53Z",
+        "completed_at": "2026-05-19T21:45:00Z"
       },
       "debug": {
         "status": "pending",
@@ -153,8 +153,8 @@
         "completed_at": null
       }
     },
-    "last_completed": "url_preverify",
-    "next_expected": "build",
+    "last_completed": "build",
+    "next_expected": "debug",
     "critiqueState": {
       "status": "complete",
       "competitive_assessment": "differentiated",
@@ -201,6 +201,12 @@
     "featureObservablesPath": "/Users/MAC/agora-agents/solv-001/FEATURE-OBSERVABLES.md"
   },
   "artifacts": {
+    "build": {
+      "report_path": "/Users/MAC/agora-agents/solv-001/BUILD-REPORT.md",
+      "state_path": "/Users/MAC/agora-agents/solv-001/.build-state.json",
+      "deployment_url": "https://solv-001.vercel.app",
+      "proof_url": "https://solv-001.vercel.app/proof"
+    },
     "forge": {
       "prd_path": "/Users/MAC/agora-agents/solv-001/PRD.md",
       "architecture_path": "/Users/MAC/agora-agents/solv-001/ARCHITECTURE.md",
@@ -225,9 +231,20 @@
   "checkpoints_answered": {
     "post_forge_credentials": true
   },
+  "buildState": {
+    "status": "complete",
+    "contractAddresses": {},
+    "deviationCount": 4,
+    "untestedDeviationCount": 2,
+    "knownRiskCount": 6,
+    "deploymentUrl": "https://solv-001.vercel.app",
+    "nextJsVersion": "15.5.18",
+    "dbSeeded": true,
+    "tasksSeeded": 8
+  },
   "dispatch_context": {
     "target_skill": "hackathon-build",
-    "mode": "compliance-fix",
-    "attempt": 2
+    "mode": "fresh",
+    "attempt": 1
   }
 }

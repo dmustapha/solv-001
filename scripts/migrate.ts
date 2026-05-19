@@ -1,9 +1,14 @@
-import { sql } from "@vercel/postgres";
+import { Client } from "pg";
 import * as dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 
 async function main() {
   console.log("Running database migration...");
+  const client = new Client({ connectionString: process.env.POSTGRES_URL_NON_POOLING ?? process.env.POSTGRES_URL });
+  await client.connect();
+
+  const sql = (strings: TemplateStringsArray, ..._values: unknown[]) =>
+    client.query(strings.join(""));
 
   await sql`CREATE TABLE IF NOT EXISTS tasks (
     id                TEXT PRIMARY KEY,
@@ -42,6 +47,7 @@ async function main() {
     timestamp   TIMESTAMPTZ NOT NULL DEFAULT now()
   )`;
 
+  await client.end();
   console.log("Migration complete");
   process.exit(0);
 }

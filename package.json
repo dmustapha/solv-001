@@ -3,33 +3,35 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev":    "next dev --turbopack",
-    "build":  "next build",
-    "start":  "next start",
-    "lint":   "next lint",
-    "seed":   "npx ts-node --project tsconfig.json scripts/seed-demo.ts",
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "seed": "npx tsx scripts/seed-demo.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@anthropic-ai/sdk":                        "latest",
+    "@anthropic-ai/sdk": "latest",
     "@circle-fin/developer-controlled-wallets": "latest",
-    "@circle-fin/x402-batching":                "latest",
-    "@modelcontextprotocol/sdk":                "latest",
-    "@vercel/postgres":                         "latest",
-    "dotenv":                                   "^16.0.0",
-    "next":                                     "15.0.0",
-    "react":                                    "^18.3.0",
-    "react-dom":                                "^18.3.0",
-    "viem":                                     "^2.0.0"
+    "@circle-fin/x402-batching": "latest",
+    "@modelcontextprotocol/sdk": "latest",
+    "@types/pg": "^8.20.0",
+    "@vercel/postgres": "latest",
+    "dotenv": "^16.0.0",
+    "next": "^15.3.2",
+    "pg": "^8.21.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "viem": "^2.0.0"
   },
   "devDependencies": {
-    "@types/node":       "^20.0.0",
-    "@types/react":      "^18.3.0",
-    "@types/react-dom":  "^18.3.0",
-    "autoprefixer":      "^10.4.0",
-    "postcss":           "^8.4.0",
-    "tailwindcss":       "^3.4.0",
-    "ts-node":           "^10.9.0",
-    "typescript":        "^5.0.0"
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.0",
+    "postcss": "^8.4.0",
+    "tailwindcss": "^3.4.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.0.0"
   }
 }

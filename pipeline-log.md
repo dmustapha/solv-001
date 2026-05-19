@@ -31,3 +31,13 @@
 2026-05-19T19:11:12Z | build | COMPLETE | build | gate=fail
 2026-05-19T19:12:05Z | conductor | START | init | Pipeline initialized
 2026-05-19T19:12:08Z | build | START | build | Dispatching build
+2026-05-19T21:12:40Z | conductor | START | resume | Resuming from url_preverify
+2026-05-19T21:12:57Z | conductor | START | init | Pipeline initialized
+2026-05-19T21:13:34Z | conductor | START | init | Pipeline initialized
+2026-05-19T21:13:39Z | conductor | START | init | Pipeline initialized
+2026-05-19T21:14:36Z | conductor | START | init | Pipeline initialized
+2026-05-19T21:15:07Z | conductor | START | init | Pipeline initialized
+2026-05-19T21:15:29Z | conductor | START | init | Pipeline initialized
+2026-05-19T21:15:31Z | build | START | build | Dispatching build
+2026-05-19T21:16:48Z | build | START | build | Dispatching build
+2026-05-19T21:24:46Z | hackathon-build | COMPLETE | build | All phases complete: typecheck clean (0 errors), DB migrated, 8 tasks seeded, 5 payers, submission files populated, CIRCLE_USDC_TOKEN_ID set

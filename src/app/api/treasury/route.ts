@@ -5,7 +5,12 @@ import type { TreasuryState }      from "@/types";
 import { OPERATING_RESERVE_USDC }  from "@/types";
 
 export async function GET(): Promise<Response> {
-  const wallet = await getAgentWallet();
+  let wallet = { address: (process.env.CIRCLE_WALLET_ADDRESS ?? "0x0") as `0x${string}`, usdc_balance: 0 };
+  try {
+    wallet = await getAgentWallet();
+  } catch {
+    // Circle API unavailable or wallet unfunded — fall back to zero balance
+  }
 
   let usycPosition = { usyc_balance: 0n, exchange_rate: 1, usdc_value: 0, apy: 0.0485 };
   try {

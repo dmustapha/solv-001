@@ -17,7 +17,7 @@ export async function GET(req: NextRequest): Promise<Response> {
     estimated_cost_usdc:     pricing.estimated_cost_usdc,
     estimated_margin:        Math.round(margin * 100),
     estimated_margin_pct:    `${(margin * 100).toFixed(1)}%`,
-    payment_address:         process.env.SELLER_EOA_ADDRESS,
+    payment_address:         process.env.SELLER_EOA_ADDRESS?.trim(),
     currency:                "USDC",
   });
 }

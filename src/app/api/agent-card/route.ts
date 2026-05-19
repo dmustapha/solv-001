@@ -20,7 +20,7 @@ export async function GET(): Promise<Response> {
     payment: {
       method:          "x402",
       chain:           "arcTestnet",
-      seller_address:  process.env.SELLER_EOA_ADDRESS as `0x${string}`,
+      seller_address:  (process.env.SELLER_EOA_ADDRESS?.trim() ?? "") as `0x${string}`,
       facilitator_url: "https://gateway-api-testnet.circle.com",
     },
     api: {

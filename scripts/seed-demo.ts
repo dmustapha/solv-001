@@ -1,10 +1,26 @@
-import { sql }            from "@vercel/postgres";
+import { Client }         from "pg";
 import { GatewayClient }  from "@circle-fin/x402-batching/client";
 import { randomUUID }     from "crypto";
 import { checkChainLive } from "../src/lib/arc-canteen";
 import dotenv             from "dotenv";
 
 dotenv.config({ path: ".env.local" });
+
+// ─── pg client + parameterized sql helper ────────────────────────────────────
+let pgClient: Client;
+
+function sql(strings: TemplateStringsArray, ...values: unknown[]): Promise<{ rows: Record<string, unknown>[] }> {
+  let text = "";
+  const params: unknown[] = [];
+  strings.forEach((s, i) => {
+    text += s;
+    if (i < values.length) {
+      params.push(values[i]);
+      text += `$${params.length}`;
+    }
+  });
+  return pgClient.query(text, params);
+}
 
 // ─── Seed state targets (from PRD Demo Prerequisites) ────────────────────────
 const SEED_WALLETS = [
@@ -59,7 +75,7 @@ async function createSchema(): Promise<void> {
 
 async function seedTasks(): Promise<void> {
   const existingCount = await sql`SELECT COUNT(*) as cnt FROM tasks`;
-  if (parseInt(existingCount.rows[0].cnt) > 0) {
+  if (parseInt(existingCount.rows[0].cnt as string) > 0) {
     console.log("Tasks already seeded. Skipping.");
     return;
   }
@@ -87,32 +103,31 @@ async function seedTasks(): Promise<void> {
     const fakeIncTx  = `0x${randomHex(32)}`;
     const fakeExpTxs = [`0x${randomHex(32)}`, `0x${randomHex(32)}`];
 
-    await sql`
-      INSERT INTO tasks (id, task, task_type, payer_wallet, status, income_usdc, cost_usdc, net_usdc,
+    await pgClient.query(
+      `INSERT INTO tasks (id, task, task_type, payer_wallet, status, income_usdc, cost_usdc, net_usdc,
         reasoning, result, client_type, income_tx_hash, expense_tx_hashes, created_at, completed_at)
-      VALUES (
-        ${id}, ${seed.task}, ${seed.task_type}, ${seed.payer}, 'complete',
-        ${seed.income}, ${seed.cost}, ${seed.net},
-        ${"Balance confirmed at $15.23. Task margin 97%. Queue depth 0. Executing now."},
-        ${"Task completed successfully."},
-        'agent',
-        ${fakeIncTx},
-        ${`{${fakeExpTxs.join(",")}}`},
-        ${createdAt.toISOString()},
-        ${createdAt.toISOString()}
-      )
-    `;
+      VALUES ($1,$2,$3,$4,'complete',$5,$6,$7,$8,$9,'agent',$10,$11,$12,$12)`,
+      [
+        id, seed.task, seed.task_type, seed.payer,
+        seed.income, seed.cost, seed.net,
+        "Balance confirmed at $15.23. Task margin 97%. Queue depth 0. Executing now.",
+        "Task completed successfully.",
+        fakeIncTx,
+        fakeExpTxs,
+        createdAt.toISOString(),
+      ]
+    );
 
-    await sql`
-      INSERT INTO treasury_events (type, amount_usdc, tx_hash, created_at)
-      VALUES ('income', ${seed.income}, ${fakeIncTx}, ${createdAt.toISOString()})
-    `;
+    await pgClient.query(
+      `INSERT INTO treasury_events (type, amount_usdc, tx_hash, created_at) VALUES ('income',$1,$2,$3)`,
+      [seed.income, fakeIncTx, createdAt.toISOString()]
+    );
 
     for (const expTx of fakeExpTxs) {
-      await sql`
-        INSERT INTO treasury_events (type, amount_usdc, tx_hash, created_at)
-        VALUES ('expense', ${seed.cost / 2}, ${expTx}, ${createdAt.toISOString()})
-      `;
+      await pgClient.query(
+        `INSERT INTO treasury_events (type, amount_usdc, tx_hash, created_at) VALUES ('expense',$1,$2,$3)`,
+        [seed.cost / 2, expTx, createdAt.toISOString()]
+      );
     }
   }
 
@@ -125,8 +140,12 @@ async function depositExpenseFunds(): Promise<void> {
 
   console.log("Depositing $2 USDC into expense Gateway Wallet...");
   const client = new GatewayClient({ chain: "arcTestnet", privateKey: privateKey as `0x${string}` });
-  await client.deposit("2");
-  console.log("Expense wallet funded.");
+  try {
+    await client.deposit("2");
+    console.log("Expense wallet funded.");
+  } catch (e) {
+    console.warn("GatewayClient deposit skipped (fund expense wallet with testnet USDC first):", (e as Error).message);
+  }
 }
 
 function randomHex(n: number): string {
@@ -144,8 +163,16 @@ async function main(): Promise<void> {
     console.warn("Arc testnet unreachable — seeding DB only (no onchain transactions)");
   }
 
-  await createSchema();
-  await seedTasks();
+  pgClient = new Client({ connectionString: process.env.POSTGRES_URL_NON_POOLING ?? process.env.POSTGRES_URL });
+  await pgClient.connect();
+
+  try {
+    await createSchema();
+    await seedTasks();
+  } finally {
+    await pgClient.end();
+  }
+
   await depositExpenseFunds();
 
   console.log("\nSeed complete. Demo state ready.");

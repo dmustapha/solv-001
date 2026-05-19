@@ -80,9 +80,9 @@ export async function transferUSDC(params: {
 
   const response = await client.createTransaction({
     walletId,
-    tokenId:     process.env.CIRCLE_USDC_TOKEN_ID!,    // USDC token ID in Circle
+    tokenId:            process.env.CIRCLE_USDC_TOKEN_ID ?? "",  // [KNOWN-GAP] ARC-TESTNET USDC tokenId — see BUILD-REPORT.md DEV-001
     destinationAddress: params.toAddress,
-    amount:      [amountUnits],
+    amount:             [amountUnits],
     fee: { type: "level" as const, config: { feeLevel: "MEDIUM" as const } },
   });
 

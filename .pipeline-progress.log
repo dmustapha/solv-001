@@ -11,3 +11,8 @@
 [2026-05-19T19:05:02Z] [debug] [pre-gate] [blocked] missing dispatch inputs: BUILD-REPORT.md,.build-state.json
 [2026-05-19T19:05:26Z] [pipeline-runner] [start] [started] FSM loop starting
 [2026-05-19T19:05:26Z] [build] [dispatch] [started] Spawning isolated claude session (attempt 1, mode fresh)
+[2026-05-19T19:11:12Z] [pipeline-runner] [start] [started] FSM loop starting
+[2026-05-19T19:11:12Z] [build] [dispatch] [started] Spawning isolated claude session (attempt 1, mode fresh)
+[2026-05-19T19:11:12Z] [build] [compliance-fix] [warning] Gaps: ledger: phase_ledger missing or empty|
+[2026-05-19T19:11:12Z] [build] [dispatch] [started] Spawning isolated claude session (attempt 2, mode compliance-fix)
+[2026-05-19T19:11:12Z] [build] [compliance-fix] [escalated] 2 cycles exhausted — continuing with gaps

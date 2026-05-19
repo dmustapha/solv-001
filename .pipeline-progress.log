@@ -1,0 +1,13 @@
+[2026-05-19T18:59:56Z] [pipeline-runner] [start] [started] FSM loop starting
+[2026-05-19T18:59:56Z] [build] [dispatch] [started] Spawning isolated claude session (attempt 1, mode fresh)
+[2026-05-19T19:04:29Z] [pipeline-runner] [start] [started] FSM loop starting
+[2026-05-19T19:04:30Z] [build] [dispatch] [started] Spawning isolated claude session (attempt 1, mode fresh)
+[2026-05-19T19:04:30Z] [build] [compliance-fix] [warning] Gaps: state: .build-state.json missing|
+[2026-05-19T19:04:30Z] [build] [dispatch] [started] Spawning isolated claude session (attempt 2, mode compliance-fix)
+[2026-05-19T19:04:30Z] [build] [compliance-fix] [escalated] 2 cycles exhausted — continuing with gaps
+[2026-05-19T19:04:30Z] [build] [dispatch] [complete] Phase complete (exit 1)
+[2026-05-19T19:04:31Z] [debug] [pre-gate] [blocked] missing dispatch inputs: BUILD-REPORT.md,.build-state.json
+[2026-05-19T19:05:01Z] [pipeline-runner] [start] [started] FSM loop starting
+[2026-05-19T19:05:02Z] [debug] [pre-gate] [blocked] missing dispatch inputs: BUILD-REPORT.md,.build-state.json
+[2026-05-19T19:05:26Z] [pipeline-runner] [start] [started] FSM loop starting
+[2026-05-19T19:05:26Z] [build] [dispatch] [started] Spawning isolated claude session (attempt 1, mode fresh)

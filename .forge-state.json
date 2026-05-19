@@ -1,0 +1,192 @@
+{
+  "version": "1.1",
+  "hackathon_name": "Agora Agents Hackathon",
+  "project_name": "solv-001",
+  "winning_idea": "Self-Funding Autonomous Agent Treasury",
+  "source": "warroom",
+  "status": "complete",
+  "current_phase": "complete",
+  "current_substep": null,
+  "current_session": 3,
+  "next_session_entry": null,
+  "phases_complete": ["phase-0", "phase-0b", "phase-1", "phase-2", "phase-2.5", "phase-3", "phase-3.5", "phase-4"],
+  "autonomous_mode": false,
+  "working_dir": "/Users/MAC/agora-agents",
+  "timestamps": {
+    "started": "2026-05-19T00:00:00Z",
+    "completed": "2026-05-19T08:00:00Z"
+  },
+  "documents": {
+    "prd": "/Users/MAC/agora-agents/solv-001/PRD.md",
+    "architecture": "/Users/MAC/agora-agents/solv-001/ARCHITECTURE.md",
+    "architecture_sections_complete": [
+      "section-1-system-overview",
+      "section-2-component-architecture",
+      "section-3-shared-types",
+      "section-4-database",
+      "section-5-circle-wallets",
+      "section-6-nanopayments-seller",
+      "section-7-nanopayments-buyer",
+      "section-8-usyc",
+      "section-9-arc-canteen",
+      "section-10-treasury-reasoning",
+      "section-11-task-execution",
+      "section-12-api-tasks",
+      "section-13-api-treasury",
+      "section-14-mcp-server",
+      "section-15-agent-card",
+      "section-16-data-service",
+      "section-17-app-shell",
+      "section-18-dashboard",
+      "section-19-treasury-panel",
+      "section-20-task-trace-panel",
+      "section-21-task-history-panel",
+      "section-22-task-submit-form",
+      "section-23-proof-page",
+      "section-24-seed-script",
+      "section-25-config-files",
+      "section-26-domain-knowledge",
+      "section-27-submission-directory",
+      "section-28-safety-architecture",
+      "section-29-agent-architecture",
+      "section-30-configuration-reference",
+      "section-31-testing-strategy",
+      "section-32-component-build-order",
+      "section-33-deployment-sequence",
+      "section-34-addresses"
+    ],
+    "implementation_plan": "/Users/MAC/agora-agents/solv-001/PLAN.md",
+    "mini_verdict": null,
+    "deep_research": null,
+    "feature_observables": "/Users/MAC/agora-agents/solv-001/FEATURE-OBSERVABLES.md"
+  },
+  "quality_scores": {
+    "prd": {
+      "component_coverage": "PASS (12/12)",
+      "flow_demo_alignment": "PASS (5/5)",
+      "api_risk_coverage": "PASS (6/6)",
+      "concern_compliance": "PASS (11/11 critical)",
+      "implementation_code_check": "PASS (0 violations)",
+      "risk_minimum": "PASS (13 >= 8)",
+      "overall": "PASS"
+    },
+    "architecture": {
+      "file_coverage": "PASS (31/31)",
+      "verification_tags": "PASS (all code sections tagged [VERIFIED]/[UNVERIFIED]/[ASSUMED])",
+      "pseudocode_check": "PASS (0 TODO/ellipsis/implement-this occurrences in code blocks)",
+      "import_validity": "PASS (all @/ imports resolve to files in tree; all packages in package.json)",
+      "component_coverage": "PASS (12/12 PRD components have Architecture sections)",
+      "file_path_headers": "PASS (every code block has // File: or /* File: or # File: header)",
+      "overall": "PASS"
+    },
+    "implementation_plan": {
+      "file_creation_coverage": "PASS (55 Architecture section refs covering 31 files)",
+      "section_references": "PASS (35 tasks, 59 Architecture section reference lines)",
+      "decision_tree_coverage": "PASS (15 decision trees >= 8 CRITICAL+HIGH risks)",
+      "phase_gates": "PASS (7/7 phases have gate checklists)",
+      "commit_messages": "PASS (36 commit messages for 35 tasks)",
+      "vague_instructions": "PASS (0 occurrences)",
+      "time_feasibility": "PASS (52h <= 56h available across 7 build days)",
+      "overall": "PASS"
+    },
+    "cross_doc_audit": {
+      "component_coverage": "PASS (12/12)",
+      "api_contract_match": "PASS (6/6)",
+      "data_structure_match": "PASS (13/13 + 1 additive)",
+      "risk_tag_alignment": "PASS (8/8)",
+      "overall": "PASS"
+    }
+  },
+  "corrections": [],
+  "tech_stack": {
+    "family": "Full-Stack Web + Agent Loop",
+    "languages": ["TypeScript"],
+    "frameworks": ["Next.js 15", "Tailwind CSS", "viem", "@circle-fin/developer-controlled-wallets", "@circle-fin/x402-batching", "@modelcontextprotocol/sdk"],
+    "deploy_target": "Vercel"
+  },
+  "project_type": "agent",
+  "project_type_rationale": "Next.js 15 + Circle wallets + autonomous treasury reasoning loop (Claude) + arc-canteen task execution agent loop",
+  "technical_spike": {
+    "needed": true,
+    "unknowns": [
+      "Circle Nanopayments SDK on Arc testnet",
+      "USYC SDK Arc testnet support",
+      "Circle Wallets API ARC-TESTNET blockchain ID",
+      "Paymaster on Arc testnet"
+    ],
+    "verified_patterns": [
+      "[VERIFIED] Circle Wallets: npm install @circle-fin/developer-controlled-wallets | blockchain='ARC-TESTNET' | initiateDeveloperControlledWalletsClient({apiKey, entitySecret}) | Source: developers.circle.com/wallets/dev-controlled",
+      "[VERIFIED] Nanopayments buyer: import { GatewayClient } from '@circle-fin/x402-batching/client' | new GatewayClient({ chain: 'arcTestnet', privateKey }) | client.deposit('1') | client.getBalances() | Source: developers.circle.com/gateway/nanopayments/quickstarts/buyer",
+      "[VERIFIED] Nanopayments seller: import { createGatewayMiddleware } from '@circle-fin/x402-batching/server' | createGatewayMiddleware({ sellerAddress, facilitatorUrl: 'https://gateway-api-testnet.circle.com' }) | Source: developers.circle.com/gateway/nanopayments/quickstarts/seller",
+      "[VERIFIED] USYC on Arc testnet CONFIRMED LIVE | Token: 0xe9185F0c5F296Ed1797AaE4238D26CCaBEadb86C | Teller: 0x9fdF14c5B14173D74C08Af27AebFf39240dC105A | REQUIRES ALLOWLISTING 24-48h | Source: docs.arc.io/arc/references/contract-addresses + LinkedIn Circle post",
+      "[VERIFIED] USDC on Arc: native gas token at 0x3600000000000000000000000000000000000000 | 6 decimals | Source: docs.arc.io",
+      "[VERIFIED] Arc Testnet Gateway domain: 26 | GatewayWallet: 0x0077777d7EBA4688BDeF3E311b846F25870A19B9 | GatewayMinter: 0x0022222ABE238Cc2C7Bb1f21003F0a260052475B | Source: arc-canteen context circlefin-skills/use-gateway.md",
+      "[VERIFIED] Nanopayments requires EOA wallet (not SCA) — Gateway verifies signatures offchain using ecrecover, incompatible with EIP-1271 | Source: developers.circle.com/gateway/nanopayments/quickstarts/buyer"
+    ],
+    "unverified_patterns": [
+      "[UNVERIFIED] Paymaster on Arc — docs list Arbitrum/Base explicitly; Arc uses USDC as native gas so Paymaster integration pattern differs",
+      "[UNVERIFIED] GatewayClient.pay() method for making x402 payments to external services — seen in blog post, not in official quickstart",
+      "[UNVERIFIED] createGatewayMiddleware adapted as verifyNanopayment() inline function for Next.js App Router — Express middleware incompatible with App Router; custom adaptation written"
+    ],
+    "assumed_patterns": [
+      "[ASSUMED] USYC Teller ABI — contract address confirmed but full ABI not in docs, must retrieve from Arc explorer",
+      "[ASSUMED] USDC approval flow for USYC deposit — standard ERC-20 approve + teller.deposit() pattern assumed",
+      "[ASSUMED] Arc RPC URL: https://rpc.arcnetwork.xyz — not in available docs; arc-canteen CLI handles natively",
+      "[ASSUMED] Circle Gateway facilitator settlement endpoint: https://gateway-api-testnet.circle.com/v1/payments/settle"
+    ]
+  },
+  "scope_mode": "standard",
+  "context_percentage": 78,
+  "session": 3,
+  "errors": [],
+  "phase_ledger": [
+    {
+      "phase": "phase-0",
+      "started_at": "2026-05-19T00:00:00Z",
+      "completed_at": "2026-05-19T00:15:00Z",
+      "evidence": "Project dir /Users/MAC/agora-agents/solv-001/ created, warroom/research files copied, concerns-snapshot-V3.md used as concerns.md, config.json loaded from research/"
+    },
+    {
+      "phase": "phase-0b",
+      "started_at": "2026-05-19T00:15:00Z",
+      "completed_at": "2026-05-19T00:45:00Z",
+      "evidence": "7 verified patterns, 2 unverified, 2 assumed. Critical finding: USYC requires allowlisting 24-48h. Full SDK API confirmed: @circle-fin/x402-batching/client + /server + @circle-fin/developer-controlled-wallets. Arc testnet contract addresses confirmed from docs.arc.io."
+    },
+    {
+      "phase": "phase-1",
+      "started_at": "2026-05-19T01:00:00Z",
+      "completed_at": "2026-05-19T02:30:00Z",
+      "evidence": "PRD.md written at /Users/MAC/agora-agents/solv-001/PRD.md (858 lines). 12 components, 5 user flows, 6 external API contracts, 10 demo scenes (4 min), 13 risks across 6 categories, 21 concerns addressed. Quality gate 6/6 PASS."
+    },
+    {
+      "phase": "phase-2",
+      "started_at": "2026-05-19T03:00:00Z",
+      "completed_at": "2026-05-19T05:00:00Z",
+      "evidence": "ARCHITECTURE.md written at /Users/MAC/agora-agents/solv-001/ARCHITECTURE.md (4008 lines after 5 bug fixes). 31 source files with complete copy-exact code. 12/12 PRD components covered. Two-wallet architecture (Circle Dev-Controlled + EOA for GatewayClient). All code tagged [VERIFIED]/[UNVERIFIED]/[ASSUMED]. Quality gate 6/6 PASS."
+    },
+    {
+      "phase": "phase-2.5",
+      "started_at": "2026-05-19T05:00:00Z",
+      "completed_at": "2026-05-19T05:30:00Z",
+      "evidence": "Architecture review complete. 5 bugs identified and fixed: getTask static import, client_type detection via submitted field, GatewayClient.pay() try/catch fallback, OPERATING_RESERVE_USDC constant in 2 locations. Cross-doc audit 4/4 PASS. User approved."
+    },
+    {
+      "phase": "phase-3",
+      "started_at": "2026-05-19T05:30:00Z",
+      "completed_at": "2026-05-19T07:00:00Z",
+      "evidence": "PLAN.md written at /Users/MAC/agora-agents/solv-001/PLAN.md (1745 lines). 7 phases (0-6, May 19-25), 35 tasks, 15 decision trees, 36 commit messages, 7 phase gates, VERIFY-MILESTONE at Phase 3 boundary. Secondary copy at docs/plans/2026-05-19-solv-001-implementation.md. Quality gate 7/7 PASS."
+    },
+    {
+      "phase": "phase-3.5",
+      "started_at": "2026-05-19T07:00:00Z",
+      "completed_at": "2026-05-19T07:30:00Z",
+      "evidence": "Cross-doc audit 4/4 PASS: component coverage 12/12, API contracts 6/6, data structures 13/13, risk-tag alignment 8/8. User approved."
+    },
+    {
+      "phase": "phase-4",
+      "started_at": "2026-05-19T07:30:00Z",
+      "completed_at": "2026-05-19T08:00:00Z",
+      "evidence": "FEATURE-OBSERVABLES.md created (11 observables for F-001 to F-011). project_type: agent. conductor-state.json updated with forge completion. PULSE.md forge section appended. pipeline-log.md COMPLETE entry written."
+    }
+  ]
+}

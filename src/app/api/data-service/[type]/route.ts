@@ -73,6 +73,33 @@ async function fetchDataServiceData(
   address: `0x${string}` | null,
   req:     NextRequest,
 ): Promise<unknown> {
+  const isDemo = req.nextUrl.searchParams.get("demo") === "true";
+
+  // Demo mode: return realistic stub data without hitting Arc RPC
+  if (isDemo) {
+    const addr = address ?? "0xDEMO000000000000000000000000000000000000";
+    switch (type) {
+      case "transaction-count":
+        return { address: addr, count: 42 };
+      case "contract-interactions":
+        return { address: addr, interaction_count: 7, recent: [] };
+      case "token-transfers":
+        return { address: addr, usdc_balance: 1.25 };
+      case "contract-code":
+        return { address: addr, code: "0x", is_contract: false };
+      case "general-research": {
+        const body  = await req.json().catch(() => ({}));
+        const query = (body as { query?: string }).query ?? "";
+        return {
+          query,
+          summary: `Research on Arc testnet (demo): "${query}" — no major anomalies detected.`,
+        };
+      }
+      default:
+        return { error: `Unknown type: ${type}` };
+    }
+  }
+
   switch (type) {
     case "transaction-count": {
       if (!address) return { count: 0, error: "address required" };

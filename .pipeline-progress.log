@@ -22,3 +22,6 @@
 [2026-05-19T19:12:08Z] [build] [dispatch] [started] Spawning isolated claude session (attempt 1, mode fresh)
 [2026-05-19T21:15:31Z] [pipeline-runner] [start] [started] FSM loop starting
 [2026-05-19T21:15:31Z] [build] [dispatch] [started] Spawning isolated claude session (attempt 1, mode fresh)
+[2026-05-19T21:29:11Z] [build] [post] [info] Build committed to git
+[2026-05-19T21:29:11Z] [build] [post] [warning] Build completed with 2 UNTESTED deviation(s) — escalating before advance
+[2026-05-19T21:39:11Z] [build] [post] [info] UNTESTED deviations acknowledged by user — advancing

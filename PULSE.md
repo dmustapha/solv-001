@@ -96,7 +96,25 @@
 - Unknown — phase did not complete
 
 ---
-### build — 2026-05-19T19:05:26Z [PRE-DISPATCH]
+### build [CRASHED]
+**Status:** RUNNING
+**Note:** Auto-entry by pipeline-runner. Skill will replace this on completion.
+**If this entry is not replaced:** skill crashed or was interrupted mid-run.
+
+#### Blockers for Downstream
+- Unknown — phase did not complete
+
+---
+### build [CRASHED]
+**Status:** RUNNING
+**Note:** Auto-entry by pipeline-runner. Skill will replace this on completion.
+**If this entry is not replaced:** skill crashed or was interrupted mid-run.
+
+#### Blockers for Downstream
+- Unknown — phase did not complete
+
+---
+### build [CRASHED]
 **Status:** RUNNING
 **Note:** Auto-entry by pipeline-runner. Skill will replace this on completion.
 **If this entry is not replaced:** skill crashed or was interrupted mid-run.

@@ -88,9 +88,9 @@
         }
       },
       "build": {
-        "status": "running",
-        "dispatched_at": "2026-05-19T19:05:26Z",
-        "completed_at": null
+        "status": "complete",
+        "dispatched_at": "2026-05-19T19:11:12Z",
+        "completed_at": "2026-05-19T19:11:12Z"
       },
       "debug": {
         "status": "pending",
@@ -227,7 +227,7 @@
   },
   "dispatch_context": {
     "target_skill": "hackathon-build",
-    "mode": "fresh",
-    "attempt": 1
+    "mode": "compliance-fix",
+    "attempt": 2
   }
 }

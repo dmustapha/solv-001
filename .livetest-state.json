@@ -1,0 +1,69 @@
+{
+  "status": "complete",
+  "overall": "PASS",
+  "testedUrl": "https://solv-001.vercel.app",
+  "testedAt": "2026-05-21T13:05:00Z",
+  "domains": {
+    "core_flows": {
+      "status": "PASS",
+      "notes": "Full SSE sequence: treasury_snapshot → reasoning_chunk* → reasoning_complete → trace* → complete. contract_summary task yields net_usdc 0.745. demo_mode=true works end-to-end.",
+      "flowsTested": 4,
+      "flowsFailed": 0
+    },
+    "api_connectivity": {
+      "status": "PASS",
+      "notes": "/, /proof, /api/treasury, /api/agent-card all 200 OK. /api/tasks SSE stream completes. /api/mcp returns 3 tools with correct Accept headers.",
+      "apisChecked": 6,
+      "apisFailed": 0
+    },
+    "visual": {
+      "status": "PASS",
+      "notes": "No broken images. No user-visible placeholder text. 'undefined' found only in Next.js script hydration tags (not rendered). 3-column dashboard renders cleanly."
+    },
+    "forms": {
+      "status": "PASS",
+      "notes": "Empty task → 400 required fields. Invalid task_type → 400 with valid type list. Malformed JSON → 400. Demo mode checkbox functions correctly. MetaMask not detected message shown when wallet absent."
+    },
+    "console_errors": {
+      "status": "PASS",
+      "errorCount": 0,
+      "errors": []
+    },
+    "auth": {
+      "status": "PASS",
+      "notes": "demo_mode=true bypasses x402 payment gate. ACCEPT decision streams with full reasoning. No wallet or USDC required for demo path."
+    },
+    "mobile": {
+      "status": "WARN",
+      "notes": "No horizontal scroll at 375px. 3-column layout cramped but functional. est. button height 30.5px < 44px touch target guideline. Primary CTA 'run task' is 54px (fine)."
+    },
+    "post_prd": {
+      "status": "PASS",
+      "notes": "/api/mcp works with correct Accept headers (run_task, get_treasury_status, estimate_task). /api/admin/migrate auth-protected. 'Try without wallet (demo mode)' checkbox present in form."
+    }
+  },
+  "criticalIssuesFixed": [
+    "EXPENSE_WALLET_PRIVATE_KEY: trailing \\n + y\\n prefix corruption in Vercel — fixed via REST API PATCH + .trim() in code",
+    "NEXT_PUBLIC_APP_URL missing — self-fetch fell back to localhost:3000, failed in Vercel serverless — fixed by adding env var",
+    "14 env vars had trailing \\n (CIRCLE_*, ARC_RPC_URL, SELLER_EOA_ADDRESS, POSTGRES_URL*) — fixed via REST API PATCH",
+    "getGatewayClient() was outside try block in payForResource() — demo fallback unreachable on constructor throw — moved inside try, committed"
+  ],
+  "criticalIssues": [],
+  "warnings": [
+    "est. button height 30.5px < 44px mobile touch target",
+    "Task history contains pre-fix error records from livetest runs — permanent DB entries, not ongoing bugs"
+  ],
+  "screenshots": [
+    "screenshots/livetest-landing-1779366635.png",
+    "screenshots/livetest-mobile-1779366646.png",
+    "screenshots/livetest-proof-1779366748.png",
+    "screenshots/livetest-presubmit-1779366875407.png",
+    "screenshots/livetest-stream-start-1779367004227.png",
+    "screenshots/livetest-stream-end-1779367029294.png",
+    "screenshots/livetest-final-desktop-1779368347.png",
+    "screenshots/livetest-final-mobile-1779368359.png",
+    "screenshots/livetest-final-proof-1779368366.png"
+  ],
+  "reportPath": "/Users/MAC/agora-agents/solv-001/LIVETEST-REPORT.md",
+  "blockerReason": null
+}

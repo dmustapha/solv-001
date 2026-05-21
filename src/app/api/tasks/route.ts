@@ -1,7 +1,7 @@
 import { NextRequest }        from "next/server";
 import { randomUUID }         from "crypto";
 import { insertTask, listTasks, updateTaskStatus, completeTask, deferTask, rejectTask,
-         getTask, insertTreasuryEvent, getAllTimeStats }  from "@/lib/db";
+         getTask, insertTreasuryEvent, getAllTimeStats, getActiveTaskCount }  from "@/lib/db";
 import { build402Response, verifyNanopayment }  from "@/lib/nanopayments-seller";
 import { getAgentWallet } from "@/lib/circle-wallets";
 import { getUSYCPosition, sweepIdleUSDCtoUSYC }  from "@/lib/usyc";
@@ -107,11 +107,12 @@ export async function POST(req: NextRequest): Promise<Response> {
       try {
         // 1. Send initial treasury snapshot
         await updateTaskStatus(taskId, "reasoning");
-        const [wallet, allTimeStats] = await Promise.all([
+        const [wallet, allTimeStats, queue_depth] = await Promise.all([
           demo_mode
             ? Promise.resolve({ address: (process.env.CIRCLE_WALLET_ADDRESS ?? "0x0") as `0x${string}`, usdc_balance: 15.00 })
             : getAgentWallet(),
           getAllTimeStats(),
+          getActiveTaskCount(),
         ]);
 
         let usycPosition = { usyc_balance: 0n, exchange_rate: 1, usdc_value: 0, apy: 0.0485 };
@@ -146,7 +147,7 @@ export async function POST(req: NextRequest): Promise<Response> {
           task_type,
           task_price_usdc:                pricing.price_usdc,
           estimated_execution_cost_usdc:  pricing.estimated_cost_usdc,
-          queue_depth:                    0,
+          queue_depth,
         });
 
         let finalDecision = null;

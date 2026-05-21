@@ -180,6 +180,13 @@ export async function getAllTimeStats(): Promise<{
   };
 }
 
+export async function getActiveTaskCount(): Promise<number> {
+  const result = await sql`
+    SELECT COUNT(*) as cnt FROM tasks WHERE status IN ('pending', 'reasoning', 'executing')
+  `;
+  return parseInt(result.rows[0].cnt, 10);
+}
+
 function rowToTask(r: Record<string, unknown>): Task {
   return {
     id:                 r.id as string,

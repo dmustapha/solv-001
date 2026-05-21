@@ -10,7 +10,7 @@ let _gatewayClient: GatewayClient | null = null;
 
 function getGatewayClient(): GatewayClient {
   if (!_gatewayClient) {
-    const privateKey = process.env.EXPENSE_WALLET_PRIVATE_KEY;
+    const privateKey = (process.env.EXPENSE_WALLET_PRIVATE_KEY ?? "").trim();
     if (!privateKey) throw new Error("EXPENSE_WALLET_PRIVATE_KEY not set");
 
     _gatewayClient = new GatewayClient({
@@ -45,9 +45,8 @@ export async function payForResource(params: {
   description: string;
   max_usdc?:   number;
 }): Promise<{ data: unknown; expense: NanopaymentExpense }> {
-  const client = getGatewayClient();
-
   try {
+    const client = getGatewayClient();
     const response = await client.pay<unknown>(params.url, {
       method: (params.method ?? "GET") as "GET" | "POST" | "PUT" | "DELETE",
       body:   params.body,

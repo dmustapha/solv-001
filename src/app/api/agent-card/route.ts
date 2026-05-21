@@ -51,8 +51,8 @@ function getTaskDescription(taskType: string): string {
     contract_summary:       "Summarize a smart contract's bytecode and interactions",
     conditional_payment:    "Send USDC when a specified onchain condition is met",
     scheduled_disbursement: "Execute a scheduled USDC transfer",
-    wallet_watch:           "Monitor a wallet for activity and alert on changes",
-    contract_watch:         "Monitor a contract for specific events",
+    wallet_watch:           "Initialize a wallet monitoring session and register for activity alerts",
+    contract_watch:         "Initialize a contract event monitoring session",
     general:                "General on-chain research and data retrieval task",
   };
   return descriptions[taskType] ?? "Task execution on Arc testnet";

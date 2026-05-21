@@ -2,14 +2,14 @@
 // Calls solv-001 via A2A REST API every 2 hours — generates traction
 // Run: npx tsx scripts/a2a-auto-caller.ts (keep running for Days 5-6)
 
-const AGENT_URL = process.env.AGENT_TREASURY_URL || "https://agent-treasury.vercel.app";
+const AGENT_URL = process.env.AGENT_TREASURY_URL || "https://solv-001.vercel.app";
 
 const TASKS = [
-  { task: "Analyze wallet activity patterns on Arc testnet", task_type: "wallet_intelligence" },
-  { task: "Verify counterparty reputation for 0x1111111111111111111111111111111111111111", task_type: "counterparty_vet" },
-  { task: "What is the current Arc testnet block height?", task_type: "general" },
-  { task: "Check recent transactions for address 0xABCdef1234567890ABCdef1234567890ABCdef12", task_type: "wallet_intelligence" },
-  { task: "Evaluate on-chain risk for contract 0x3600000000000000000000000000000000000000", task_type: "counterparty_vet" },
+  { task: "Summarize the USYC teller contract at 0x9fdF14c5B14173D74C08Af27AebFf39240dC105A", task_type: "contract_summary" },
+  { task: "Summarize the USDC token contract at 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", task_type: "contract_summary" },
+  { task: "Research current DeFi stablecoin yield strategies for idle treasury capital", task_type: "general" },
+  { task: "Summarize the Circle CCTP v2 bridge contract at 0xBd3fa81B58Ba92a82136038B25aDec7066af3155", task_type: "contract_summary" },
+  { task: "Research best practices for AI agent treasury management on Arc testnet", task_type: "general" },
 ];
 
 async function call() {
@@ -42,7 +42,7 @@ async function call() {
             try {
               const parsed = JSON.parse(line.slice(5));
               if (parsed.type === "complete") {
-                console.log(`[${new Date().toISOString()}] Task complete — task_id: ${parsed.task_id}`);
+                console.log(`[${new Date().toISOString()}] Task complete — task_id: ${parsed.data?.task_id}`);
               }
             } catch { /* non-JSON SSE lines */ }
           }

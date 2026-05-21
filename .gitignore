@@ -28,3 +28,14 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .env*.local
+
+# local pipeline context
+.claude/
+PULSE.md
+pipeline-log.md
+*.polish-state.json
+*.deploy-state.json
+*.stress-test-state.json
+*.debug-state.json
+*.wire-state.json
+*.verify-state.json

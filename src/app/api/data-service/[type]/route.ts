@@ -1,5 +1,5 @@
 import { NextRequest }                from "next/server";
-import { build402Response, verifyNanopayment } from "@/lib/nanopayments-seller";
+import { build402Response, verifyGatewayPayment } from "@/lib/nanopayments-seller";
 import { getTransactionCount, getNativeBalance, getCode, getLogs } from "@/lib/arc-canteen";
 
 const DATA_SERVICE_PRICES: Record<string, number> = {
@@ -21,38 +21,44 @@ export async function GET(
     return Response.json({ error: `Unknown data service type: ${type}` }, { status: 404 });
   }
 
-  // Check for x402 payment
-  const paymentHeader = req.headers.get("x-payment-token");
-  const paymentBody   = req.headers.get("x-payment-authorization");
+  // Check for x402 payment (GatewayClient sends Payment-Signature header on retry)
+  const paymentSig = req.headers.get("Payment-Signature");
+  let paymentTxHash: string | undefined;
 
-  if (!paymentHeader && !paymentBody) {
+  if (!paymentSig) {
     const demoMode = req.nextUrl.searchParams.get("demo") === "true";
     if (!demoMode) {
-      return build402Response({ price_usdc, task_type: type });
+      return build402Response({ price_usdc, task_type: type, requestUrl: req.url });
     }
   } else {
-    const sellerAddress = process.env.SELLER_EOA_ADDRESS!;
     try {
-      const auth = JSON.parse(paymentBody ?? paymentHeader ?? "{}");
-      const verification = await verifyNanopayment(auth, sellerAddress);
+      const verification = await verifyGatewayPayment(paymentSig);
       if (!verification.verified) {
-        return build402Response({ price_usdc, task_type: type });
+        return build402Response({ price_usdc, task_type: type, requestUrl: req.url });
       }
+      paymentTxHash = verification.tx_hash;
     } catch {
-      return build402Response({ price_usdc, task_type: type });
+      return build402Response({ price_usdc, task_type: type, requestUrl: req.url });
     }
   }
 
   const address = req.nextUrl.searchParams.get("address") as `0x${string}` | null;
 
+  // Build PAYMENT-RESPONSE header for GatewayClient to read transaction hash
+  const paymentResponseHeader = paymentTxHash
+    ? Buffer.from(JSON.stringify({ success: true, transaction: paymentTxHash })).toString("base64")
+    : undefined;
+
   try {
     const data = await fetchDataServiceData(type, address, req);
-    return Response.json(data, {
-      headers: {
-        "x-payment-amount":  String(price_usdc),
-        "x-payment-tx-hash": "0x" + "0".repeat(64),
-      },
-    });
+    const responseHeaders: Record<string, string> = {
+      "x-payment-amount":  String(price_usdc),
+      "x-payment-tx-hash": paymentTxHash ?? "0x" + "0".repeat(64),
+    };
+    if (paymentResponseHeader) {
+      responseHeaders["PAYMENT-RESPONSE"] = paymentResponseHeader;
+    }
+    return Response.json(data, { headers: responseHeaders });
   } catch (err) {
     return Response.json(
       { error: err instanceof Error ? err.message : "Data service error" },
@@ -103,30 +109,42 @@ async function fetchDataServiceData(
   switch (type) {
     case "transaction-count": {
       if (!address) return { count: 0, error: "address required" };
-      const count = await getTransactionCount(address);
-      return { address, count };
+      try {
+        const count = await getTransactionCount(address);
+        return { address, count };
+      } catch {
+        return { address, count: 0, note: "Arc RPC unavailable" };
+      }
     }
 
     case "contract-interactions": {
       if (!address) return { interactions: [], error: "address required" };
-      const logs = await getLogs({
-        fromBlock: "earliest",
-        toBlock:   "latest",
-        address,
-      });
-      return { address, interaction_count: (logs as unknown[]).length, recent: (logs as unknown[]).slice(0, 5) };
+      try {
+        const logs = await getLogs({ fromBlock: "earliest", toBlock: "latest", address });
+        return { address, interaction_count: (logs as unknown[]).length, recent: (logs as unknown[]).slice(0, 5) };
+      } catch {
+        return { address, interaction_count: 0, recent: [], note: "Arc RPC unavailable" };
+      }
     }
 
     case "token-transfers": {
       if (!address) return { transfers: [], error: "address required" };
-      const balance = await getNativeBalance(address);
-      return { address, usdc_balance: Number(balance) / 1e6 };
+      try {
+        const balance = await getNativeBalance(address);
+        return { address, usdc_balance: Number(balance) / 1e6 };
+      } catch {
+        return { address, usdc_balance: 0, note: "Arc RPC unavailable" };
+      }
     }
 
     case "contract-code": {
       if (!address) return { code: "0x", error: "address required" };
-      const code = await getCode(address);
-      return { address, code, is_contract: code !== "0x" && code.length > 2 };
+      try {
+        const code = await getCode(address);
+        return { address, code, is_contract: code !== "0x" && code.length > 2 };
+      } catch {
+        return { address, code: "0x", is_contract: false, note: "Arc RPC unavailable" };
+      }
     }
 
     case "general-research": {

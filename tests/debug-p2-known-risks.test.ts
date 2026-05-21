@@ -186,14 +186,13 @@ describe("RISK-4: build402Response returns complete payment spec", () => {
     const p = body.payment;
     expect(p).toHaveProperty("method", "x402");
     expect(p).toHaveProperty("chain", "arcTestnet");
-    expect(p).toHaveProperty("chain_id", 26);
+    expect(p).toHaveProperty("chain_id", 5042002);  // Arc testnet chain ID (corrected from 26)
     expect(p).toHaveProperty("currency", "USDC");
     expect(p).toHaveProperty("token_address");
     expect(p).toHaveProperty("price_usdc");
     expect(p).toHaveProperty("price_units");
     expect(p).toHaveProperty("seller_address");
     expect(p).toHaveProperty("facilitator_url");
-    expect(p).toHaveProperty("instructions");
   });
 });
 

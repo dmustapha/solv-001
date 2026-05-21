@@ -20,14 +20,34 @@ export async function GET(): Promise<Response> {
 // ─── POST /api/tasks (streaming SSE) ─────────────────────────────────────────
 
 export async function POST(req: NextRequest): Promise<Response> {
-  const body = await req.json() as TaskSubmission;
+  let body: TaskSubmission;
+  try {
+    body = await req.json() as TaskSubmission;
+  } catch {
+    return Response.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
   const { task, task_type, payer_wallet, callback_url, payment_authorization, demo_mode, client_type: submitted_client_type } = body;
 
   if (!task || !task_type || !payer_wallet) {
     return Response.json({ error: "task, task_type, and payer_wallet are required" }, { status: 400 });
   }
 
+  // Validate callback_url if provided — prevent SSRF to internal hosts
+  if (callback_url) {
+    try {
+      const parsed = new URL(callback_url);
+      if (!["https:", "http:"].includes(parsed.protocol) || parsed.hostname === "localhost" || parsed.hostname.startsWith("127.") || parsed.hostname.startsWith("192.168.") || parsed.hostname === "0.0.0.0") {
+        return Response.json({ error: "callback_url must be a public https URL" }, { status: 400 });
+      }
+    } catch {
+      return Response.json({ error: "callback_url is not a valid URL" }, { status: 400 });
+    }
+  }
+
   const pricing = TASK_PRICING[task_type];
+  if (!pricing) {
+    return Response.json({ error: `Unknown task_type: "${task_type}". Valid types: ${Object.keys(TASK_PRICING).join(", ")}` }, { status: 400 });
+  }
 
   // ── Payment gate ──────────────────────────────────────────────────────────
   let income_tx_hash: `0x${string}` | undefined;
@@ -35,11 +55,16 @@ export async function POST(req: NextRequest): Promise<Response> {
 
   if (!demo_mode) {
     if (!payment_authorization) {
-      return build402Response({ price_usdc: pricing.price_usdc, task_type });
+      return build402Response({ price_usdc: pricing.price_usdc, task_type, requestUrl: req.url });
     }
 
     const sellerAddress = process.env.SELLER_EOA_ADDRESS!;
-    const verification  = await verifyNanopayment(payment_authorization, sellerAddress);
+    let verification: Awaited<ReturnType<typeof verifyNanopayment>>;
+    try {
+      verification = await verifyNanopayment(payment_authorization, sellerAddress);
+    } catch {
+      return Response.json({ error: "Malformed payment authorization" }, { status: 402 });
+    }
 
     if (!verification.verified) {
       return Response.json(
@@ -83,7 +108,9 @@ export async function POST(req: NextRequest): Promise<Response> {
         // 1. Send initial treasury snapshot
         await updateTaskStatus(taskId, "reasoning");
         const [wallet, allTimeStats] = await Promise.all([
-          getAgentWallet(),
+          demo_mode
+            ? Promise.resolve({ address: (process.env.CIRCLE_WALLET_ADDRESS ?? "0x0") as `0x${string}`, usdc_balance: 15.00 })
+            : getAgentWallet(),
           getAllTimeStats(),
         ]);
 

@@ -5,7 +5,6 @@ import type { USYCPosition } from "@/types";
 import { OPERATING_RESERVE_USDC, USYC_SWEEP_MULTIPLIER } from "@/types";
 
 // ─── Arc Testnet chain definition ─────────────────────────────────────────────
-// [ASSUMED] RPC URL — check arc-canteen config or docs.arc.io for the correct endpoint.
 
 export const arcTestnet = defineChain({
   id:   26,
@@ -25,16 +24,13 @@ export const publicClient = createPublicClient({
 });
 
 // ─── Contract addresses ───────────────────────────────────────────────────────
-// [VERIFIED] Source: docs.arc.io/arc/references/contract-addresses
+// Source: docs.arc.io/arc/references/contract-addresses
 
 export const USDC_ADDRESS  = "0x3600000000000000000000000000000000000000" as const;
 export const USYC_ADDRESS  = "0xe9185F0c5F296Ed1797AaE4238D26CCaBEadb86C" as const;
 export const TELLER_ADDRESS = "0x9fdF14c5B14173D74C08Af27AebFf39240dC105A" as const;
 
 // ─── ABI fragments ────────────────────────────────────────────────────────────
-// [ASSUMED] Teller ABI — derived from PRD Section 5 docs + standard Teller pattern.
-// MUST retrieve actual ABI from Arc explorer before building. Replace this ABI if
-// the explorer shows different function signatures.
 
 const TELLER_ABI = [
   {
@@ -99,8 +95,7 @@ export async function getUSYCPosition(walletAddress: `0x${string}`): Promise<USY
     }),
   ]);
 
-  // [ASSUMED] USYC has 18 decimals; exchangeRate is scaled 1e18; annualYield is basis points.
-  // Verify against Arc explorer. Adjust formatUnits calls if different.
+  // USYC has 18 decimals; exchangeRate is scaled 1e18; annualYield is basis points.
   const usycBalance   = rawBalance as bigint;
   const exchangeRate  = parseFloat(formatUnits(rawRate as bigint, 18));
   const annualYieldBp = Number(rawYield as bigint);

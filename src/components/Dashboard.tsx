@@ -97,7 +97,7 @@ export default function Dashboard() {
   }, [fetchTasks, fetchTreasury]);
 
   return (
-    <div className="grid grid-cols-12 gap-3 h-[calc(100vh-100px)]">
+    <div className="grid grid-cols-12 gap-2 h-[calc(100vh-88px)]">
       {/* Left: Treasury State */}
       <div className="col-span-3 flex flex-col gap-3">
         <TreasuryPanel treasury={treasury} />

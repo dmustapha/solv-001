@@ -21,7 +21,7 @@ An autonomous AI agent that earns USDC by completing tasks, pays its own operati
 
 **Layer 3 — Here is what that looks like.** Two tasks arrive simultaneously. Task A: wallet vetting at $0.50, estimated execution cost $0.18 — the margin is strong. Task B: web research at $0.30, estimated execution cost $0.22 — the margin is thin. Meanwhile, a monitoring job started 6 hours ago has accumulated $0.04 in Nanopayment expenses, and $0.80 in income from the morning is still unconfirmed. A rule-based agent accepts both tasks. Claude defers Task B: "Pending income is unconfirmed and the monitoring position is drawing down at $0.04 per hour. Task A is profitable now. Task B at this margin requires confirmed balance first — deferring." That decision, with its reasoning and every transaction that informed it, is on Arc.
 
-solv-001 is the first to combine Circle's full 4-tool stack — Wallets, Nanopayments, USYC, and Paymaster — with Claude reasoning over live financial state, deployed natively on Arc.
+solv-001 is the first to combine Circle's full 4-tool stack — Wallets, Nanopayments, USYC, and the MCP agent interface — with Claude reasoning over live financial state, deployed natively on Arc.
 
 ### Solution
 
@@ -40,7 +40,7 @@ Every income event, expense, and treasury decision is auditable on the Arc block
 |---|:---:|---|
 | Agentic Sophistication | 30% | Claude reasons over 4 live financial inputs (balance, pending income, USYC yield rate, task profit margin) before accepting each task. The decision is explained in plain English, streamed character-by-character in the dashboard. This is not a rules engine. |
 | Traction | 30% | Agent deployed Day 1, generating real Nanopayment expense transactions for 12 days straight. 5 distinct external wallets make task purchases (human or agent-to-agent). On-chain traction is self-evidencing and immutable. |
-| Circle Tool Usage | 20% | All 4 Circle tools serve distinct treasury functions that would collapse without them: Wallets (identity + USDC custody), Nanopayments (sub-cent expense tracking), USYC (idle capital yield), Paymaster (unified gas accounting). Passes the substitution test for each tool individually. |
+| Circle Tool Usage | 20% | All 4 Circle tools serve distinct treasury functions that would collapse without them: Wallets (identity + USDC custody), Nanopayments seller (income gate), Nanopayments buyer (expense tracking), USYC (idle capital yield). Passes the substitution test for each tool individually. |
 | Innovation | 20% | Agent treasuries exist but every current implementation is rule-based. solv-001 is the first to combine Circle's full 4-tool stack with LLM reasoning over live financial state on Arc. The judges built these tools — they will recognize whether the integration is real or decorative. |
 
 ---

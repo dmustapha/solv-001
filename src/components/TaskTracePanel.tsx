@@ -11,19 +11,19 @@ interface Props {
 }
 
 const TRACE_ICONS: Record<string, string> = {
-  payment_received: "→",
+  payment_received: "↓",
   query:            "→",
-  nanopayment:      "→",
+  nanopayment:      "↑",
   reasoning:        "◈",
   result:           "✓",
 };
 
 const TRACE_COLORS: Record<string, string> = {
-  payment_received: "text-green-400",
-  nanopayment:      "text-yellow-400",
-  query:            "text-blue-400",
-  reasoning:        "text-purple-400",
-  result:           "text-green-400",
+  payment_received: "#16C97A",
+  nanopayment:      "#E09820",
+  query:            "#4B8BF0",
+  reasoning:        "#9060E8",
+  result:           "#16C97A",
 };
 
 export default function TaskTracePanel({ traceEvents, reasoning, isActive, activeTask: _activeTask }: Props) {
@@ -34,20 +34,21 @@ export default function TaskTracePanel({ traceEvents, reasoning, isActive, activ
   }, [traceEvents, reasoning]);
 
   return (
-    <div className="bg-gray-900 rounded-lg border border-gray-800 h-full flex flex-col">
-      <div className="px-4 py-3 border-b border-gray-800 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-200">Execution Trace</h2>
+    <div className="bg-[#0D1016] border border-[#18202E] rounded-sm h-full flex flex-col">
+      {/* Header */}
+      <div className="px-4 py-2.5 border-b border-[#18202E] flex items-center justify-between shrink-0">
+        <span className="text-[10px] uppercase tracking-widest text-[#60788A]">Execution Trace</span>
         {isActive && (
-          <span className="flex items-center gap-1.5 text-xs text-blue-400">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+          <span className="flex items-center gap-1.5 text-[10px] text-[#4B8BF0] font-mono uppercase tracking-widest">
+            <span className="w-1 h-1 rounded-full bg-[#4B8BF0] animate-pulse" />
             Active
           </span>
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 font-mono text-xs scrollbar-thin space-y-1">
+      <div className="flex-1 overflow-y-auto px-4 py-3 font-mono text-[11px] scrollbar-thin flex flex-col gap-0.5">
         {traceEvents.length === 0 && !reasoning && (
-          <div className="text-gray-600 text-center mt-8">
+          <div className="text-[#283040] text-center mt-16">
             Submit a task to see the execution trace
           </div>
         )}
@@ -57,13 +58,13 @@ export default function TaskTracePanel({ traceEvents, reasoning, isActive, activ
         ))}
 
         {reasoning && (
-          <div className="mt-3 mb-2">
-            <div className="text-purple-500 text-xs uppercase tracking-wide mb-1.5">
-              Claude Reasoning
+          <div className="mt-4">
+            <div className="text-[10px] uppercase tracking-widest text-[#9060E8]/60 mb-2">
+              Reasoning
             </div>
-            <div className="text-gray-300 leading-relaxed whitespace-pre-wrap bg-gray-800 rounded p-2 text-xs">
+            <div className="text-[#D6E0EC]/70 leading-relaxed whitespace-pre-wrap bg-[#09050F] border border-[#9060E8]/15 rounded-sm p-3 text-[11px]">
               {reasoning}
-              {isActive && <span className="animate-pulse">▌</span>}
+              {isActive && <span className="animate-pulse text-[#9060E8]">▌</span>}
             </div>
           </div>
         )}
@@ -76,25 +77,25 @@ export default function TaskTracePanel({ traceEvents, reasoning, isActive, activ
 
 function TraceRow({ event }: { event: TraceEvent }) {
   const icon  = TRACE_ICONS[event.type]  ?? "·";
-  const color = TRACE_COLORS[event.type] ?? "text-gray-400";
+  const color = TRACE_COLORS[event.type] ?? "#60788A";
   const arcUrl = process.env.NEXT_PUBLIC_ARC_EXPLORER_URL ?? "https://explorer.arcnetwork.xyz";
 
   return (
-    <div className="flex items-start gap-2 py-0.5">
-      <span className={`shrink-0 ${color}`}>{icon}</span>
-      <div className="flex-1 min-w-0">
-        <span className="text-gray-300">{event.description}</span>
+    <div className="flex items-start gap-2.5 py-0.5 group">
+      <span className="shrink-0 mt-px text-[11px]" style={{ color }}>{icon}</span>
+      <div className="flex-1 min-w-0 text-[#D6E0EC]/75">
+        {event.description}
         {event.cost_usdc && (
-          <span className="ml-2 text-yellow-500">
-            [Nanopayment: ${event.cost_usdc.toFixed(3)}
+          <span className="ml-2 text-[#E09820]/80">
+            [{event.cost_usdc.toFixed(3)} USDC
             {event.arc_tx_hash && (
               <a
                 href={`${arcUrl}/tx/${event.arc_tx_hash}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="ml-1 text-blue-400 hover:text-blue-300"
+                className="ml-1 text-[#4B8BF0] hover:text-[#00C8FF] transition-colors"
               >
-                Arc tx: {event.arc_tx_hash.slice(0, 8)}...↗
+                {event.arc_tx_hash.slice(0, 8)}↗
               </a>
             )}
             ]
@@ -105,13 +106,13 @@ function TraceRow({ event }: { event: TraceEvent }) {
             href={`${arcUrl}/tx/${event.arc_tx_hash}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="ml-2 text-blue-400 hover:text-blue-300 text-xs"
+            className="ml-2 text-[#4B8BF0]/60 hover:text-[#4B8BF0] transition-colors text-[10px]"
           >
-            [Arc tx: {event.arc_tx_hash.slice(0, 8)}...↗]
+            [{event.arc_tx_hash.slice(0, 8)}↗]
           </a>
         )}
       </div>
-      <span className="text-gray-600 shrink-0 text-xs">
+      <span className="text-[#283040] shrink-0 text-[10px] group-hover:text-[#60788A] transition-colors">
         {new Date(event.timestamp).toLocaleTimeString()}
       </span>
     </div>

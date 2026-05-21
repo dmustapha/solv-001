@@ -33,7 +33,7 @@ An autonomous AI agent that accepts plain-text tasks in USDC via Nanopayments, r
 ### File Structure Tree
 
 ```
-agent-treasury/                         ← Next.js project root
+solv-001/                               ← Next.js project root
 ├── src/
 │   ├── app/
 │   │   ├── layout.tsx                  ← App shell, fonts, metadata

@@ -43,7 +43,7 @@ export async function getAgentWalletBalance(): Promise<number> {
 }
 
 // ─── Contract execution (used for USYC operations) ───────────────────────────
-// [VERIFIED] POST /transactions/contractExecution
+// POST /transactions/contractExecution
 // Source: developers.circle.com/wallets/dev-controlled
 
 export interface ContractCallParams {
@@ -80,7 +80,7 @@ export async function transferUSDC(params: {
 
   const response = await client.createTransaction({
     walletId,
-    tokenId:            process.env.CIRCLE_USDC_TOKEN_ID ?? "",  // [KNOWN-GAP] ARC-TESTNET USDC tokenId — see BUILD-REPORT.md DEV-001
+    tokenId:            process.env.CIRCLE_USDC_TOKEN_ID ?? "",  // set CIRCLE_USDC_TOKEN_ID in env
     destinationAddress: params.toAddress,
     amount:             [amountUnits],
     fee: { type: "level" as const, config: { feeLevel: "MEDIUM" as const } },

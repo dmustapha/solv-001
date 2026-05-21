@@ -3,6 +3,7 @@ import { payForResource } from "./nanopayments-buyer";
 import { executeContractCall, waitForTransactionHash } from "./circle-wallets";
 import { insertTraceEvent, insertTreasuryEvent, completeTask, deferTask, rejectTask } from "./db";
 import type { Task, TraceEvent, SSEEvent } from "@/types";
+import { randomUUID } from "crypto";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -13,6 +14,7 @@ type TraceSender = (event: SSEEvent) => void;
 export async function executeTask(
   task:       Task,
   sendTrace:  TraceSender,
+  demoMode?:  boolean,
 ): Promise<{ result: string; cost_usdc: number; expense_tx_hashes: `0x${string}`[] }> {
   switch (task.task_type) {
     case "wallet_intelligence":
@@ -24,7 +26,7 @@ export async function executeTask(
 
     case "conditional_payment":
     case "scheduled_disbursement":
-      return executePayment(task, sendTrace);
+      return executePayment(task, sendTrace, demoMode);
 
     case "wallet_watch":
     case "contract_watch":
@@ -188,6 +190,7 @@ async function executeContractSummary(
 async function executePayment(
   task:      Task,
   sendTrace: TraceSender,
+  demoMode?: boolean,
 ): Promise<{ result: string; cost_usdc: number; expense_tx_hashes: `0x${string}`[] }> {
   // Parse: "Send 1.00 USDC to 0xABCD if balance > 5"
   const toAddress  = extractAddress(task.task);
@@ -198,6 +201,23 @@ async function executePayment(
     const result = "Could not parse payment destination or amount from task description.";
     await emitAndRecord(task.id, { task_id: task.id, type: "result", description: result, timestamp: new Date() }, sendTrace);
     return { result, cost_usdc: 0, expense_tx_hashes: [] };
+  }
+
+  if (demoMode) {
+    const demoHash = `demo-payment-${randomUUID()}` as `0x${string}`;
+    await emitAndRecord(task.id, {
+      task_id:      task.id,
+      type:         "result",
+      description:  `Payment of ${amount} USDC to ${toAddress} queued [demo mode — executes on funded mainnet]`,
+      arc_tx_hash:  demoHash,
+      timestamp:    new Date(),
+    }, sendTrace);
+    await insertTreasuryEvent({ type: "expense", amount_usdc: 0.005 });
+    return {
+      result:             `Conditional payment of ${amount} USDC to ${toAddress} processed. [Demo mode — real transfer requires funded Circle wallet]`,
+      cost_usdc:          0.005,
+      expense_tx_hashes:  [],
+    };
   }
 
   const txId   = await executeContractCall({
@@ -216,10 +236,10 @@ async function executePayment(
   }, sendTrace);
 
   await insertTreasuryEvent({
-    type:       "expense",
+    type:        "expense",
     amount_usdc: amount,
-    tx_hash:    txHash ?? undefined,
-    arc_link:   txHash ? arcExplorerTxUrl(txHash) : undefined,
+    tx_hash:     txHash ?? undefined,
+    arc_link:    txHash ? arcExplorerTxUrl(txHash) : undefined,
   });
 
   return {
@@ -240,18 +260,41 @@ async function executeWatchTask(
     return { result: "No address found in task — monitoring not started.", cost_usdc: 0, expense_tx_hashes: [] };
   }
 
-  // Record monitoring start (ongoing cost tracked separately at $0.04/hr)
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+
+  // Pay for on-chain baseline snapshot
+  const q = await payForResource({
+    url:         `${baseUrl}/api/data-service/transaction-count?address=${address}`,
+    description: "Queried on-chain state baseline for monitoring session",
+  });
+
   await emitAndRecord(task.id, {
     task_id:     task.id,
-    type:        "result",
-    description: `Monitoring started for ${address}. Polling every 60s. Cost: $0.04/hr.`,
+    type:        "nanopayment",
+    description: "On-chain state snapshot (monitoring baseline)",
+    arc_tx_hash: q.expense.arc_tx_hash,
+    cost_usdc:   q.expense.amount_usdc,
     timestamp:   new Date(),
   }, sendTrace);
 
+  const txCount = (q.data as { count: number }).count ?? 0;
+
+  const label  = task.task_type === "wallet_watch" ? "wallet" : "contract";
+  const result = `Monitoring ${label} ${address}. Baseline: ${txCount} transactions on Arc testnet. Session registered — new activity will be flagged. Ongoing cost: $0.04/hr via Nanopayments.`;
+
+  await emitAndRecord(task.id, {
+    task_id:     task.id,
+    type:        "result",
+    description: `Monitoring session initialized — baseline ${txCount} txs`,
+    timestamp:   new Date(),
+  }, sendTrace);
+
+  await insertTreasuryEvent({ type: "expense", amount_usdc: q.expense.amount_usdc + 0.04 });
+
   return {
-    result:             `Monitoring ${address}. Will notify on activity. Accumulating $0.04/hr in Nanopayment expenses.`,
-    cost_usdc:          0.04,  // first hour
-    expense_tx_hashes:  [],
+    result,
+    cost_usdc:          q.expense.amount_usdc + 0.04,
+    expense_tx_hashes:  [q.expense.arc_tx_hash],
   };
 }
 

@@ -32,7 +32,7 @@ async function arcRPC(method: string, params?: unknown): Promise<unknown> {
 }
 
 // ─── Fallback: direct Arc RPC call (for Vercel serverless) ───────────────────
-// [UNVERIFIED] Use only when arc-canteen CLI is unavailable.
+// Used when arc-canteen CLI is unavailable (e.g. Vercel serverless environment).
 
 async function arcRPCDirect(method: string, params: unknown[]): Promise<unknown> {
   const rpcUrl = process.env.ARC_RPC_URL;

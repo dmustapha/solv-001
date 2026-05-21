@@ -34,7 +34,7 @@ export default async function ProofPage() {
             </tr>
             <tr className="border-b border-gray-800">
               <td className="py-2 text-gray-400">USDC balance</td>
-              <td className="py-2 font-mono text-green-400">{wallet?.usdc_balance.toFixed(4)} USDC</td>
+              <td className="py-2 font-mono text-green-400">{(wallet?.usdc_balance ?? 0).toFixed(4)} USDC</td>
             </tr>
             <tr className="border-b border-gray-800">
               <td className="py-2 text-gray-400">Blockchain</td>

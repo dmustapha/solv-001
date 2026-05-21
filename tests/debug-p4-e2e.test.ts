@@ -11,13 +11,13 @@ const BASE = "http://localhost:3000";
 // ── E2E Flow 1: Full SSE drain for demo task ──────────────────────────────────
 
 describe("E2E-F1: Full SSE stream — demo task completes", () => {
-  it("wallet_intelligence demo task produces treasury_snapshot + complete events", async () => {
+  it("contract_summary demo task produces treasury_snapshot + complete events", async () => {
     const res = await fetch(`${BASE}/api/tasks`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        task: "Analyze wallet 0xDEMO010000000000000000000000000000000001",
-        task_type: "wallet_intelligence",
+        task: "Summarize the USYC teller contract at 0x9fdF14c5B14173D74C08Af27AebFf39240dC105A",
+        task_type: "contract_summary",
         payer_wallet: "0xDEMO010000000000000000000000000000000001",
         demo_mode: true,
       }),

@@ -24,9 +24,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.variable} ${mono.variable} font-sans bg-gray-950 text-gray-100 antialiased`}>
+      <body className={`${inter.variable} ${mono.variable} font-sans antialiased`}>
         {children}
       </body>
+
     </html>
   );
 }

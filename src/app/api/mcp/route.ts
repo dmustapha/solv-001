@@ -1,6 +1,6 @@
 import { NextRequest }        from "next/server";
 import { Server }             from "@modelcontextprotocol/sdk/server/index.js";
-import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
+import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
@@ -132,47 +132,19 @@ function createMcpServer(): Server {
 }
 
 // ─── Route handlers ───────────────────────────────────────────────────────────
-// GET opens SSE connection; POST handles tool call messages.
-// [UNVERIFIED] SSEServerTransport adaptation for Next.js App Router.
+// Uses WebStandardStreamableHTTPServerTransport (stateless, one per request).
+// Handles GET (SSE streaming) and POST (JSON tool calls) per MCP Streamable HTTP spec.
 
-export async function GET(req: NextRequest): Promise<Response> {
-  const { readable, writable } = new TransformStream();
-  const writer  = writable.getWriter();
-  const encoder = new TextEncoder();
-
-  const mcpServer = createMcpServer();
-
-  const transport = new SSEServerTransport("/api/mcp", {
-    write: (data: string) => writer.write(encoder.encode(data)),
-    end:   ()             => writer.close(),
-  } as unknown as ConstructorParameters<typeof SSEServerTransport>[1]);
-
-  await mcpServer.connect(transport);
-
-  req.signal.addEventListener("abort", () => {
-    mcpServer.close().catch(() => {});
-    writer.close().catch(() => {});
+async function handleMcpRequest(req: NextRequest): Promise<Response> {
+  const transport = new WebStandardStreamableHTTPServerTransport({
+    sessionIdGenerator: undefined, // stateless mode
   });
-
-  return new Response(readable, {
-    headers: {
-      "Content-Type":  "text/event-stream",
-      "Cache-Control": "no-cache",
-      "Connection":    "keep-alive",
-    },
-  });
+  const server = createMcpServer();
+  await server.connect(transport);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return transport.handleRequest(req as any);
 }
 
-export async function POST(req: NextRequest): Promise<Response> {
-  const body   = await req.json();
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-
-  const { name } = body.params ?? {};
-
-  if (name === "get_treasury_status") {
-    const res = await fetch(`${appUrl}/api/treasury`);
-    return Response.json({ result: { content: [{ type: "text", text: await res.text() }] } });
-  }
-
-  return Response.json({ error: "Use GET /api/mcp for SSE transport" }, { status: 400 });
-}
+export async function GET(req: NextRequest):    Promise<Response> { return handleMcpRequest(req); }
+export async function POST(req: NextRequest):   Promise<Response> { return handleMcpRequest(req); }
+export async function DELETE(req: NextRequest): Promise<Response> { return handleMcpRequest(req); }

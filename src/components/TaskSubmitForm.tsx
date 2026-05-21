@@ -12,9 +12,9 @@ interface Props {
 
 export default function TaskSubmitForm({ onSubmit, isSubmitting }: Props) {
   const [task,     setTask]     = useState("");
-  const [taskType, setTaskType] = useState<TaskType>("wallet_intelligence");
+  const [taskType, setTaskType] = useState<TaskType>("contract_summary");
   const [estimate, setEstimate] = useState<{ price_usdc: number; estimated_margin: number } | null>(null);
-  const [demoMode, setDemoMode] = useState(true);  // Default true for judges without wallets
+  const [demoMode, setDemoMode] = useState(true);
   const [error,    setError]    = useState("");
 
   const pricing = TASK_PRICING[taskType];
@@ -25,7 +25,6 @@ export default function TaskSubmitForm({ onSubmit, isSubmitting }: Props) {
     setEstimate(data);
   };
 
-  // Build EIP-3009 payment authorization via MetaMask
   async function buildPaymentAuth(): Promise<EIP3009Auth | null> {
     if (typeof window === "undefined" || !(window as Window & { ethereum?: unknown }).ethereum) return null;
 
@@ -110,24 +109,24 @@ export default function TaskSubmitForm({ onSubmit, isSubmitting }: Props) {
   };
 
   return (
-    <div className="bg-gray-900 rounded-lg border border-gray-800 p-4">
-      <h3 className="text-sm font-semibold text-gray-200 mb-3">Submit Task</h3>
+    <div className="bg-[#0D1016] border border-[#18202E] rounded-sm p-4">
+      <div className="text-[10px] uppercase tracking-widest text-[#60788A] mb-3">Submit Task</div>
 
-      <form onSubmit={handleSubmit} className="space-y-3">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <textarea
           value={task}
           onChange={e => setTask(e.target.value)}
-          placeholder="Vet wallet 0xABCD — should I send them 500 USDC?"
-          className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-xs text-gray-200 placeholder-gray-600 resize-none focus:outline-none focus:border-blue-500"
+          placeholder="e.g., Summarize the USYC teller contract at 0x9fdF14c5B14173D74C08Af27AebFf39240dC105A"
+          className="w-full bg-[#111620] border border-[#18202E] rounded-sm px-3 py-2.5 text-[12px] font-mono text-[#D6E0EC] placeholder-[#283040] resize-none focus:outline-none focus:border-[#00C8FF]/40 transition-colors"
           rows={3}
           disabled={isSubmitting}
         />
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
           <select
             value={taskType}
             onChange={e => setTaskType(e.target.value as TaskType)}
-            className="flex-1 bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-xs text-gray-300 focus:outline-none focus:border-blue-500"
+            className="flex-1 bg-[#111620] border border-[#18202E] rounded-sm px-2.5 py-1.5 text-[11px] text-[#60788A] font-mono focus:outline-none focus:border-[#00C8FF]/40 appearance-none transition-colors"
             disabled={isSubmitting}
           >
             {(Object.keys(TASK_PRICING) as TaskType[]).map(t => (
@@ -138,41 +137,44 @@ export default function TaskSubmitForm({ onSubmit, isSubmitting }: Props) {
           <button
             type="button"
             onClick={fetchEstimate}
-            className="text-xs text-blue-400 hover:text-blue-300 px-2 border border-gray-700 rounded"
+            className="text-[11px] font-mono text-[#60788A] hover:text-[#D6E0EC] px-3 py-1.5 border border-[#18202E] hover:border-[#283040] rounded-sm transition-colors"
             disabled={isSubmitting}
           >
-            Estimate
+            est.
           </button>
         </div>
 
         {estimate && (
-          <div className="text-xs text-gray-400 bg-gray-800 rounded p-2">
-            Fee: <span className="text-green-400">${estimate.price_usdc} USDC</span>
-            {" "}· Margin: <span className="text-yellow-400">{estimate.estimated_margin}%</span>
+          <div className="text-[11px] font-mono text-[#60788A] flex items-center gap-3 px-0.5">
+            <span>fee <span className="text-[#16C97A]">${estimate.price_usdc}</span></span>
+            <span className="text-[#18202E]">·</span>
+            <span>margin <span className="text-[#E09820]">{estimate.estimated_margin}%</span></span>
           </div>
         )}
 
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex items-center gap-2">
           <input
             type="checkbox"
             id="demoMode"
             checked={demoMode}
             onChange={e => setDemoMode(e.target.checked)}
-            className="rounded"
+            className="w-3 h-3 rounded-sm accent-[#00C8FF]"
           />
-          <label htmlFor="demoMode" className="text-gray-400">
-            Demo mode (no payment required)
+          <label htmlFor="demoMode" className="text-[11px] text-[#60788A] cursor-pointer select-none">
+            Try without wallet (demo mode)
           </label>
         </div>
 
-        {error && <p className="text-xs text-red-400">{error}</p>}
+        {error && <p className="text-[11px] text-[#F04858] font-mono">{error}</p>}
 
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 text-white text-xs font-medium py-2 rounded transition-colors"
+          className="w-full bg-[#111620] hover:bg-[#141C28] disabled:opacity-40 border border-[#18202E] hover:border-[#00C8FF]/30 text-[#00C8FF] text-[12px] font-mono py-2 rounded-sm transition-all"
         >
-          {isSubmitting ? "Executing..." : `Submit Task${!demoMode ? ` — $${pricing.price_usdc} USDC` : ""}`}
+          {isSubmitting
+            ? "executing..."
+            : `run task${!demoMode ? ` — $${pricing.price_usdc} USDC` : ""}`}
         </button>
       </form>
     </div>

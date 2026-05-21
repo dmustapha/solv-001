@@ -4,7 +4,8 @@ import { NextRequest } from "next/server";
 // One-time migration endpoint — protected by ADMIN_SECRET env var
 export async function POST(req: NextRequest): Promise<Response> {
   const secret = req.headers.get("x-admin-secret");
-  if (process.env.ADMIN_SECRET && secret !== process.env.ADMIN_SECRET) {
+  const adminSecret = process.env.ADMIN_SECRET;
+  if (!adminSecret || secret !== adminSecret) {
     return Response.json({ error: "unauthorized" }, { status: 401 });
   }
 

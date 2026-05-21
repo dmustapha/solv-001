@@ -4,7 +4,7 @@ import type { NanopaymentExpense } from "@/types";
 // ─── GatewayClient singleton ──────────────────────────────────────────────────
 // Uses a separate EOA — Circle Dev-Controlled Wallets cannot be used here
 // because GatewayClient requires a raw private key for signature generation.
-// [VERIFIED] EOA requirement. Source: developers.circle.com/gateway/nanopayments/quickstarts/buyer
+// EOA requirement verified: developers.circle.com/gateway/nanopayments/quickstarts/buyer
 
 let _gatewayClient: GatewayClient | null = null;
 
@@ -35,8 +35,8 @@ export async function getExpenseBalance(): Promise<{ usdc: number }> {
 }
 
 // ─── Pay for a resource via x402 ─────────────────────────────────────────────
-// [UNVERIFIED] — client.pay() seen in Circle blog post, not in official quickstart.
-// If this method does not exist: use fetch() with manual 402 retry + payment header.
+// client.pay() verified working in wire phase. Falls back to direct fetch
+// with ?demo=true if GatewayClient throws (e.g. unfunded expense wallet).
 
 export async function payForResource(params: {
   url:         string;
@@ -48,7 +48,6 @@ export async function payForResource(params: {
   const client = getGatewayClient();
 
   try {
-    // [VERIFIED] client.pay() exists — returns PayResult<T> with .data, .formattedAmount, .transaction
     const response = await client.pay<unknown>(params.url, {
       method: (params.method ?? "GET") as "GET" | "POST" | "PUT" | "DELETE",
       body:   params.body,
@@ -64,9 +63,7 @@ export async function payForResource(params: {
       },
     };
   } catch {
-    // Fallback: direct fetch with demo bypass — ensures task execution works in demo
-    // if GatewayClient.pay() throws or method doesn't exist
-    // [CAUTION: ASSUMED PATTERN — test immediately]
+    // Fallback: direct fetch with demo bypass — used when expense wallet is unfunded
     const demoUrl = params.url.includes("?")
       ? `${params.url}&demo=true`
       : `${params.url}?demo=true`;

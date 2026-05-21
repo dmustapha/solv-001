@@ -10,15 +10,11 @@
 | **MCP Endpoint** | https://solv-001.vercel.app/api/mcp |
 | **Treasury API** | https://solv-001.vercel.app/api/treasury |
 
-> Note: Production URL pending deploy-to-github skill. Confirmed available per url_preverify phase.
-
 ## GitHub
 
 | Resource | URL |
 |----------|-----|
 | **Repository** | https://github.com/dmustapha/solv-001 |
-
-> Note: Repository pending deployment push.
 
 ## Explorer Links
 

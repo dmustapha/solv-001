@@ -197,6 +197,7 @@ export async function POST(req: NextRequest): Promise<Response> {
         const { result, cost_usdc, expense_tx_hashes } = await executeTask(
           taskRecord,
           (evt) => send(evt),
+          demo_mode,
         );
 
         const net_usdc = pricing.price_usdc - cost_usdc;

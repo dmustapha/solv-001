@@ -171,7 +171,9 @@ export async function getAllTimeStats(): Promise<{
   `;
   const completed = await sql`SELECT COUNT(*) as cnt FROM tasks WHERE status = 'complete'`;
   const pending = await sql`
-    SELECT COALESCE(SUM(income_usdc), 0) as total FROM tasks WHERE status IN ('pending', 'reasoning', 'executing')
+    SELECT COALESCE(SUM(income_usdc), 0) as total FROM tasks
+    WHERE status IN ('pending', 'reasoning', 'executing')
+    AND created_at > NOW() - INTERVAL '5 minutes'
   `;
   return {
     total_income:    parseFloat(income.rows[0].total),
@@ -181,8 +183,11 @@ export async function getAllTimeStats(): Promise<{
 }
 
 export async function getActiveTaskCount(): Promise<number> {
+  // Only count tasks created in the last 5 minutes — avoids zombie tasks from timed-out serverless requests
   const result = await sql`
-    SELECT COUNT(*) as cnt FROM tasks WHERE status IN ('pending', 'reasoning', 'executing')
+    SELECT COUNT(*) as cnt FROM tasks
+    WHERE status IN ('pending', 'reasoning', 'executing')
+    AND created_at > NOW() - INTERVAL '5 minutes'
   `;
   return parseInt(result.rows[0].cnt, 10);
 }

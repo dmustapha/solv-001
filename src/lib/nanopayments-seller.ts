@@ -2,7 +2,7 @@ import type { EIP3009Auth } from "@/types";
 
 const FACILITATOR_URL        = "https://gateway-api-testnet.circle.com";
 const TESTNET_GATEWAY_WALLET = "0x0077777d7EBA4688BDeF3E311b846F25870A19B9";
-const ARC_NETWORK            = "eip155:5042002";
+const ARC_NETWORK            = "eip155:26";
 const ARC_USDC               = "0x3600000000000000000000000000000000000000";
 
 // Ensure Google DNS is used as fallback when local resolver fails for Circle Gateway
@@ -52,7 +52,7 @@ export async function verifyNanopayment(
       validBefore: auth.validBefore,
       nonce:       auth.nonce,
       signature:   auth.signature,
-      token:       process.env.ARC_USDC_ADDRESS,
+      token:       process.env.ARC_USDC_ADDRESS ?? "0x3600000000000000000000000000000000000000",
       chainId:     26,
     }),
   });
@@ -122,7 +122,7 @@ export function build402Response(params: {
       payment: {
         method:          "x402",
         chain:           "arcTestnet",
-        chain_id:        5042002,
+        chain_id:        26,
         currency:        "USDC",
         token_address:   ARC_USDC,
         price_usdc:      params.price_usdc,

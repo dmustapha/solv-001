@@ -82,14 +82,22 @@ function createMcpServer(): Server {
 
       case "run_task": {
         const a = args as Record<string, unknown>;
+        if (!a.payment_authorization) {
+          return {
+            content: [{ type: "text", text: JSON.stringify({
+              error:   "payment_required",
+              message: "payment_authorization (EIP-3009 signed auth) is required. Call /api/tasks without it first to receive payment details.",
+            }) }],
+            isError: true,
+          };
+        }
         const res = await fetch(`${appUrl}/api/tasks`, {
           method:  "POST",
           headers: { "Content-Type": "application/json" },
           body:    JSON.stringify({
-            task:        a.task_description,
-            task_type:   a.task_type,
-            payer_wallet: a.payer_wallet,
-            demo_mode:   !a.payment_authorization,
+            task:                  a.task_description,
+            task_type:             a.task_type,
+            payer_wallet:          a.payer_wallet,
             payment_authorization: a.payment_authorization,
           }),
         });

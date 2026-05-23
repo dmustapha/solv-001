@@ -90,7 +90,7 @@ export async function completeTask(params: {
       reasoning         = ${params.reasoning},
       result            = ${params.result},
       income_tx_hash    = ${params.income_tx_hash ?? null},
-      expense_tx_hashes = ${params.expense_tx_hashes as unknown as string},
+      expense_tx_hashes = ${`{${params.expense_tx_hashes.map(h => `"${h}"`).join(",")}}` as unknown as string},
       completed_at      = now()
     WHERE id = ${params.id}
   `;
@@ -102,6 +102,20 @@ export async function deferTask(id: string, reasoning: string): Promise<void> {
 
 export async function rejectTask(id: string, reasoning: string): Promise<void> {
   await sql`UPDATE tasks SET status = 'rejected', reasoning = ${reasoning} WHERE id = ${id}`;
+}
+
+export async function failTask(id: string, reasoning: string): Promise<void> {
+  await sql`UPDATE tasks SET status = 'failed', reasoning = ${reasoning} WHERE id = ${id}`;
+}
+
+export async function cleanupZombieTasks(): Promise<void> {
+  await sql`
+    UPDATE tasks
+    SET status    = 'failed',
+        reasoning = 'Execution timed out — serverless function limit exceeded'
+    WHERE status IN ('pending', 'reasoning', 'executing')
+    AND created_at < NOW() - INTERVAL '5 minutes'
+  `;
 }
 
 export async function insertTraceEvent(event: Omit<TraceEvent, "id">): Promise<void> {

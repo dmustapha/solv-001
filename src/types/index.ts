@@ -14,7 +14,8 @@ export type TaskStatus =
   | "executing"
   | "complete"
   | "deferred"
-  | "rejected";
+  | "rejected"
+  | "failed";
 
 export type ClientType = "human" | "agent";
 
@@ -34,8 +35,7 @@ export interface TaskSubmission {
   payer_wallet: `0x${string}`;
   callback_url?: string;
   client_type?: "human" | "agent";      // optional: A2A callers pass "agent"
-  payment_authorization?: EIP3009Auth;  // optional: absent = 402 returned
-  demo_mode?: boolean;                  // skip payment gate for UI demo
+  payment_authorization?: EIP3009Auth;  // absent → 402 response returned
 }
 
 export interface Task {

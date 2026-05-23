@@ -1,6 +1,8 @@
 import { NextRequest }                from "next/server";
 import { build402Response, verifyGatewayPayment } from "@/lib/nanopayments-seller";
-import { getTransactionCount, getNativeBalance, getCode, getLogs } from "@/lib/arc-canteen";
+import { getTransactionCount, getCode, getLogs, checkChainLive } from "@/lib/arc-canteen";
+import { checkRateLimit, pruneExpiredEntries } from "@/lib/rate-limit";
+import Anthropic from "@anthropic-ai/sdk";
 
 const DATA_SERVICE_PRICES: Record<string, number> = {
   "transaction-count":     0.005,
@@ -19,6 +21,17 @@ export async function GET(
 
   if (!price_usdc) {
     return Response.json({ error: `Unknown data service type: ${type}` }, { status: 404 });
+  }
+
+  // Rate limit: 30 data-service calls per IP per minute
+  pruneExpiredEntries();
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  const rl = checkRateLimit(`data-service:${ip}`, { limit: 30, windowMs: 60_000 });
+  if (!rl.allowed) {
+    return Response.json(
+      { error: "Rate limit exceeded. Max 30 data service calls per minute." },
+      { status: 429, headers: { "Retry-After": String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } },
+    );
   }
 
   // Check for x402 payment (GatewayClient sends Payment-Signature header on retry)
@@ -90,7 +103,7 @@ async function fetchDataServiceData(
       case "contract-interactions":
         return { address: addr, interaction_count: 7, recent: [] };
       case "token-transfers":
-        return { address: addr, usdc_balance: 1.25 };
+        return { address: addr, transfer_count: 5, total_sent_usdc: 0.25, total_received_usdc: 1.50, recent: [], window_blocks: 500 };
       case "contract-code":
         return { address: addr, code: "0x", is_contract: false };
       case "general-research": {
@@ -129,11 +142,48 @@ async function fetchDataServiceData(
 
     case "token-transfers": {
       if (!address) return { transfers: [], error: "address required" };
+
+      const TRANSFER_SIG  = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+      const ARC_USDC      = "0x3600000000000000000000000000000000000000";
+      const paddedAddress = "0x" + "0".repeat(24) + address.slice(2).toLowerCase();
+
       try {
-        const balance = await getNativeBalance(address);
-        return { address, usdc_balance: Number(balance) / 1e6 };
+        const { blockNumber } = await checkChainLive();
+        const fromBlock       = "0x" + Math.max(0, blockNumber - 500).toString(16);
+
+        // Two calls: transfers FROM address, transfers TO address
+        const [sentLogs, receivedLogs] = await Promise.all([
+          getLogs({ fromBlock, toBlock: "latest", address: ARC_USDC, topics: [TRANSFER_SIG, paddedAddress] }),
+          getLogs({ fromBlock, toBlock: "latest", address: ARC_USDC, topics: [TRANSFER_SIG, null, paddedAddress] }),
+        ]);
+
+        const decodeUsdc = (log: unknown) => Number(BigInt((log as { data: string }).data)) / 1e6;
+
+        const totalSent     = sentLogs.reduce<number>((s, l) => s + decodeUsdc(l), 0);
+        const totalReceived = receivedLogs.reduce<number>((s, l) => s + decodeUsdc(l), 0);
+        const transferCount = sentLogs.length + receivedLogs.length;
+
+        // Merge, sort by block descending, take 5 most recent
+        const recent = [...sentLogs, ...receivedLogs]
+          .sort((a, b) => {
+            const la = a as { blockNumber: string };
+            const lb = b as { blockNumber: string };
+            return parseInt(lb.blockNumber, 16) - parseInt(la.blockNumber, 16);
+          })
+          .slice(0, 5)
+          .map((l) => {
+            const log = l as { topics: string[]; data: string; transactionHash: string };
+            return {
+              from:        "0x" + log.topics[1].slice(26),
+              to:          "0x" + log.topics[2].slice(26),
+              amount_usdc: Number(BigInt(log.data)) / 1e6,
+              tx_hash:     log.transactionHash,
+            };
+          });
+
+        return { address, transfer_count: transferCount, total_sent_usdc: totalSent, total_received_usdc: totalReceived, recent, window_blocks: 500 };
       } catch {
-        return { address, usdc_balance: 0, note: "Arc RPC unavailable" };
+        return { address, transfer_count: 0, total_sent_usdc: 0, total_received_usdc: 0, recent: [], note: "Arc RPC unavailable" };
       }
     }
 
@@ -150,10 +200,19 @@ async function fetchDataServiceData(
     case "general-research": {
       const body  = await req.json().catch(() => ({}));
       const query = (body as { query?: string }).query ?? "";
-      return {
-        query,
-        summary: `Research on Arc testnet: "${query}" — no major anomalies detected. Address activity within normal parameters for Arc testnet as of ${new Date().toISOString()}.`,
-      };
+      const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+      const response  = await anthropic.messages.create({
+        model:      "claude-haiku-4-5-20251001",
+        max_tokens: 400,
+        messages:   [{
+          role:    "user",
+          content: `You are a research assistant specializing in Arc testnet, Circle payments, and DeFi. Answer concisely in 2-4 sentences: ${query}`,
+        }],
+      });
+      const summary = response.content[0]?.type === "text"
+        ? response.content[0].text
+        : "Research complete — see Arc testnet documentation for details.";
+      return { query, summary };
     }
 
     default:

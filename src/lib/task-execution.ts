@@ -1,9 +1,18 @@
-import { getTransactionCount, getNativeBalance, arcExplorerTxUrl } from "./arc-canteen";
-import { payForResource } from "./nanopayments-buyer";
-import { executeContractCall, waitForTransactionHash } from "./circle-wallets";
+import { getTransactionCount, getNativeBalance, getCode, getLogs, checkChainLive,
+         arcExplorerTxUrl } from "./arc-canteen";
+import { executeContractCall, waitForTransactionHash, getAgentWalletBalance } from "./circle-wallets";
 import { insertTraceEvent, insertTreasuryEvent, completeTask, deferTask, rejectTask } from "./db";
 import type { Task, TraceEvent, SSEEvent } from "@/types";
-import { randomUUID } from "crypto";
+import Anthropic from "@anthropic-ai/sdk";
+
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+
+const DATA_COST     = 0.005; // per on-chain RPC query
+const RESEARCH_COST = 0.010; // per Claude general-research query
+
+// Arc USDC contract on testnet
+const ARC_USDC     = "0x3600000000000000000000000000000000000000";
+const TRANSFER_SIG = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -14,7 +23,6 @@ type TraceSender = (event: SSEEvent) => void;
 export async function executeTask(
   task:       Task,
   sendTrace:  TraceSender,
-  demoMode?:  boolean,
 ): Promise<{ result: string; cost_usdc: number; expense_tx_hashes: `0x${string}`[] }> {
   switch (task.task_type) {
     case "wallet_intelligence":
@@ -26,7 +34,7 @@ export async function executeTask(
 
     case "conditional_payment":
     case "scheduled_disbursement":
-      return executePayment(task, sendTrace, demoMode);
+      return executePayment(task, sendTrace);
 
     case "wallet_watch":
     case "contract_watch":
@@ -63,80 +71,82 @@ async function executeWalletIntelligence(
   sendTrace: TraceSender,
 ): Promise<{ result: string; cost_usdc: number; expense_tx_hashes: `0x${string}`[] }> {
   const address = extractAddress(task.task) ?? (process.env.DEMO_WALLET_01 as `0x${string}`);
-  const expenseTxHashes: `0x${string}`[] = [];
   let totalCost = 0;
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-
   // Query 1: transaction count
-  const q1 = await payForResource({
-    url:         `${baseUrl}/api/data-service/transaction-count?address=${address}`,
+  const txCount = await getTransactionCount(address).catch(() => 0);
+  totalCost += DATA_COST;
+  await insertTreasuryEvent({ type: "expense", amount_usdc: DATA_COST });
+
+  await emitAndRecord(task.id, {
+    task_id:   task.id,
+    type:      "query",
     description: "Queried transaction history",
-  });
-  totalCost += q1.expense.amount_usdc;
-  expenseTxHashes.push(q1.expense.arc_tx_hash);
-
-  await emitAndRecord(task.id, {
-    task_id:      task.id,
-    type:         "nanopayment",
-    description:  `Queried transaction history`,
-    arc_tx_hash:  q1.expense.arc_tx_hash,
-    cost_usdc:    q1.expense.amount_usdc,
-    timestamp:    new Date(),
+    cost_usdc: DATA_COST,
+    timestamp: new Date(),
   }, sendTrace);
 
-  // Query 2: contract interactions
-  const q2 = await payForResource({
-    url:         `${baseUrl}/api/data-service/contract-interactions?address=${address}`,
+  // Query 2: contract interactions (event logs)
+  const interactionLogs = await getLogs({ fromBlock: "earliest", toBlock: "latest", address })
+    .catch(() => [] as unknown[]);
+  totalCost += DATA_COST;
+  await insertTreasuryEvent({ type: "expense", amount_usdc: DATA_COST });
+
+  await emitAndRecord(task.id, {
+    task_id:   task.id,
+    type:      "query",
     description: "Queried contract interactions",
-  });
-  totalCost += q2.expense.amount_usdc;
-  expenseTxHashes.push(q2.expense.arc_tx_hash);
-
-  await emitAndRecord(task.id, {
-    task_id:      task.id,
-    type:         "nanopayment",
-    description:  `Queried contract interactions`,
-    arc_tx_hash:  q2.expense.arc_tx_hash,
-    cost_usdc:    q2.expense.amount_usdc,
-    timestamp:    new Date(),
+    cost_usdc: DATA_COST,
+    timestamp: new Date(),
   }, sendTrace);
 
-  // Query 3: token transfers
-  const q3 = await payForResource({
-    url:         `${baseUrl}/api/data-service/token-transfers?address=${address}`,
+  // Query 3: USDC token transfers (sent + received) in last 500 blocks
+  let transferCount = 0;
+  let totalReceived = 0;
+
+  try {
+    const { blockNumber } = await checkChainLive();
+    const fromBlock       = "0x" + Math.max(0, blockNumber - 500).toString(16);
+    const paddedAddress   = "0x" + "0".repeat(24) + address.slice(2).toLowerCase();
+
+    const [sentLogs, receivedLogs] = await Promise.all([
+      getLogs({ fromBlock, toBlock: "latest", address: ARC_USDC, topics: [TRANSFER_SIG, paddedAddress] }),
+      getLogs({ fromBlock, toBlock: "latest", address: ARC_USDC, topics: [TRANSFER_SIG, null, paddedAddress] }),
+    ]);
+
+    const decodeUsdc = (log: unknown) => Number(BigInt((log as { data: string }).data)) / 1e6;
+    transferCount = sentLogs.length + receivedLogs.length;
+    totalReceived = receivedLogs.reduce<number>((s, l) => s + decodeUsdc(l), 0);
+  } catch { /* RPC unavailable — continue with zeros */ }
+
+  totalCost += DATA_COST;
+  await insertTreasuryEvent({ type: "expense", amount_usdc: DATA_COST });
+
+  await emitAndRecord(task.id, {
+    task_id:   task.id,
+    type:      "query",
     description: "Queried token transfers",
-  });
-  totalCost += q3.expense.amount_usdc;
-  expenseTxHashes.push(q3.expense.arc_tx_hash);
-
-  await emitAndRecord(task.id, {
-    task_id:      task.id,
-    type:         "nanopayment",
-    description:  `Queried token transfers`,
-    arc_tx_hash:  q3.expense.arc_tx_hash,
-    cost_usdc:    q3.expense.amount_usdc,
-    timestamp:    new Date(),
+    cost_usdc: DATA_COST,
+    timestamp: new Date(),
   }, sendTrace);
 
-  // Direct arc-canteen balance read (no Nanopayment — internal infra call)
-  const balance   = await getNativeBalance(address);
-  const txCount   = (q1.data as { count: number }).count ?? 0;
-  const usdcBal   = Number(balance) / 1e6;
+  // Balance read (no extra charge — same RPC node)
+  const balance = await getNativeBalance(address).catch(() => 0n);
+  const usdcBal = Number(balance) / 1e6;
 
-  const result = `Wallet ${address}: ${txCount} transactions, ${usdcBal.toFixed(4)} USDC balance. ` +
+  const result = `Wallet ${address}: ${txCount} nonce txs, ${transferCount} USDC transfers in last 500 blocks ` +
+    `(+${totalReceived.toFixed(2)} USDC received), ${usdcBal.toFixed(4)} USDC balance. ` +
+    `Contract interactions: ${interactionLogs.length}. ` +
     (txCount > 10 ? "Active history — reasonable counterparty." : "Limited history — proceed with caution.");
 
   await emitAndRecord(task.id, {
     task_id:     task.id,
     type:        "result",
-    description: `Report delivered`,
+    description: "Report delivered",
     timestamp:   new Date(),
   }, sendTrace);
 
-  await insertTreasuryEvent({ type: "expense", amount_usdc: totalCost });
-
-  return { result, cost_usdc: totalCost, expense_tx_hashes: expenseTxHashes };
+  return { result, cost_usdc: totalCost, expense_tx_hashes: [] };
 }
 
 // ─── Handler: contract summary ────────────────────────────────────────────────
@@ -148,26 +158,35 @@ async function executeContractSummary(
   sendTrace: TraceSender,
 ): Promise<{ result: string; cost_usdc: number; expense_tx_hashes: `0x${string}`[] }> {
   const address = extractAddress(task.task) ?? USYC_ADDRESS_PLACEHOLDER;
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
-  const q = await payForResource({
-    url:         `${baseUrl}/api/data-service/contract-code?address=${address}`,
-    description: "Fetched contract bytecode",
-  });
+  const code = await getCode(address).catch(() => "0x");
+  await insertTreasuryEvent({ type: "expense", amount_usdc: DATA_COST });
 
   await emitAndRecord(task.id, {
-    task_id:     task.id,
-    type:        "nanopayment",
+    task_id:   task.id,
+    type:      "query",
     description: "Fetched contract bytecode",
-    arc_tx_hash: q.expense.arc_tx_hash,
-    cost_usdc:   q.expense.amount_usdc,
-    timestamp:   new Date(),
+    cost_usdc: DATA_COST,
+    timestamp: new Date(),
   }, sendTrace);
 
-  const code   = (q.data as { code: string }).code ?? "0x";
-  const result = code === "0x"
-    ? `Address ${address} is an EOA, not a contract.`
-    : `Contract at ${address}: ${Math.floor(code.length / 2)} bytes bytecode. ERC-20/Teller pattern detected.`;
+  let result: string;
+  if (code === "0x") {
+    result = `Address ${address} is an EOA, not a contract.`;
+  } else {
+    const byteLen = Math.floor((code.length - 2) / 2);
+    try {
+      const analysis = await anthropic.messages.create({
+        model:      "claude-haiku-4-5-20251001",
+        max_tokens: 300,
+        messages:   [{ role: "user", content: `Analyze this Ethereum contract bytecode and identify its likely purpose, standards (ERC-20, ERC-721, etc.), and key patterns. Be concise (2-3 sentences):\n${code.slice(0, 2000)}` }],
+      });
+      const summary = analysis.content[0]?.type === "text" ? analysis.content[0].text : "Analysis unavailable.";
+      result = `Contract at ${address}: ${byteLen} bytes. ${summary}`;
+    } catch {
+      result = `Contract at ${address}: ${byteLen} bytes bytecode. Pattern analysis unavailable.`;
+    }
+  }
 
   await emitAndRecord(task.id, {
     task_id:     task.id,
@@ -176,24 +195,16 @@ async function executeContractSummary(
     timestamp:   new Date(),
   }, sendTrace);
 
-  await insertTreasuryEvent({ type: "expense", amount_usdc: q.expense.amount_usdc });
-
-  return {
-    result,
-    cost_usdc:          q.expense.amount_usdc,
-    expense_tx_hashes:  [q.expense.arc_tx_hash],
-  };
+  return { result, cost_usdc: DATA_COST, expense_tx_hashes: [] };
 }
 
-// ─── Handler: conditional payment ────────────────────────────────────────────
+// ─── Handler: conditional payment + scheduled disbursement ───────────────────
 
 async function executePayment(
   task:      Task,
   sendTrace: TraceSender,
-  demoMode?: boolean,
 ): Promise<{ result: string; cost_usdc: number; expense_tx_hashes: `0x${string}`[] }> {
-  // Parse: "Send 1.00 USDC to 0xABCD if balance > 5"
-  const toAddress  = extractAddress(task.task);
+  const toAddress   = extractAddress(task.task);
   const amountMatch = task.task.match(/(\d+(?:\.\d+)?)\s*USDC/i);
   const amount      = amountMatch ? parseFloat(amountMatch[1]) : 0;
 
@@ -203,25 +214,53 @@ async function executePayment(
     return { result, cost_usdc: 0, expense_tx_hashes: [] };
   }
 
-  if (demoMode) {
-    const demoHash = `demo-payment-${randomUUID()}` as `0x${string}`;
-    await emitAndRecord(task.id, {
-      task_id:      task.id,
-      type:         "result",
-      description:  `Payment of ${amount} USDC to ${toAddress} queued [demo mode — executes on funded mainnet]`,
-      arc_tx_hash:  demoHash,
-      timestamp:    new Date(),
-    }, sendTrace);
-    await insertTreasuryEvent({ type: "expense", amount_usdc: 0.005 });
-    return {
-      result:             `Conditional payment of ${amount} USDC to ${toAddress} processed. [Demo mode — real transfer requires funded Circle wallet]`,
-      cost_usdc:          0.005,
-      expense_tx_hashes:  [],
-    };
+  // ── Scheduled disbursement: check if date has passed ─────────────────────
+  if (task.task_type === "scheduled_disbursement") {
+    const dateMatch = task.task.match(/(\d{4}-\d{2}-\d{2})/);
+    if (dateMatch) {
+      const scheduledDate = new Date(dateMatch[1]);
+      if (scheduledDate > new Date()) {
+        const result = `Scheduled for ${dateMatch[1]}. Payment will execute on or after that date. Monitoring active.`;
+        await emitAndRecord(task.id, { task_id: task.id, type: "result", description: result, timestamp: new Date() }, sendTrace);
+        return { result, cost_usdc: DATA_COST, expense_tx_hashes: [] };
+      }
+      await emitAndRecord(task.id, {
+        task_id:     task.id,
+        type:        "result",
+        description: `Scheduled date ${dateMatch[1]} has passed. Proceeding with transfer.`,
+        timestamp:   new Date(),
+      }, sendTrace);
+    }
   }
 
+  // ── Conditional payment: evaluate the condition ───────────────────────────
+  if (task.task_type === "conditional_payment") {
+    const condMatch = task.task.match(/if\s+(?:agent\s+)?balance\s*(>|<|>=|<=)\s*(\d+(?:\.\d+)?)/i);
+    if (condMatch) {
+      const agentBalance = await getAgentWalletBalance();
+      const operator     = condMatch[1];
+      const threshold    = parseFloat(condMatch[2]);
+
+      const conditionMet =
+        operator === ">"  ? agentBalance > threshold  :
+        operator === "<"  ? agentBalance < threshold  :
+        operator === ">=" ? agentBalance >= threshold :
+        agentBalance <= threshold;
+
+      const condDescription = `Condition check: agent balance $${agentBalance.toFixed(4)} ${operator} $${threshold} → ${conditionMet ? "MET" : "NOT MET"}`;
+      await emitAndRecord(task.id, { task_id: task.id, type: "result", description: condDescription, timestamp: new Date() }, sendTrace);
+
+      if (!conditionMet) {
+        const result = `Condition not met: agent balance $${agentBalance.toFixed(4)} not ${operator} $${threshold}. Payment withheld.`;
+        await emitAndRecord(task.id, { task_id: task.id, type: "result", description: result, timestamp: new Date() }, sendTrace);
+        return { result, cost_usdc: DATA_COST, expense_tx_hashes: [] };
+      }
+    }
+  }
+
+  // ── Execute USDC transfer ─────────────────────────────────────────────────
   const txId   = await executeContractCall({
-    contractAddress:      "0x3600000000000000000000000000000000000000",  // USDC
+    contractAddress:      "0x3600000000000000000000000000000000000000",  // Arc USDC
     abiFunctionSignature: "transfer(address,uint256)",
     abiParameters:        [toAddress, (amount * 1_000_000).toFixed(0)],
   });
@@ -243,8 +282,8 @@ async function executePayment(
   });
 
   return {
-    result:             `Sent ${amount} USDC to ${toAddress}. Arc tx: ${txHash}`,
-    cost_usdc:          0.005,
+    result:             `Sent ${amount} USDC to ${toAddress}. Arc tx: ${txHash ?? "pending"}`,
+    cost_usdc:          DATA_COST,
     expense_tx_hashes:  txHash ? [txHash] : [],
   };
 }
@@ -260,24 +299,17 @@ async function executeWatchTask(
     return { result: "No address found in task — monitoring not started.", cost_usdc: 0, expense_tx_hashes: [] };
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-
-  // Pay for on-chain baseline snapshot
-  const q = await payForResource({
-    url:         `${baseUrl}/api/data-service/transaction-count?address=${address}`,
-    description: "Queried on-chain state baseline for monitoring session",
-  });
+  // Baseline snapshot: transaction count
+  const txCount = await getTransactionCount(address).catch(() => 0);
+  await insertTreasuryEvent({ type: "expense", amount_usdc: DATA_COST });
 
   await emitAndRecord(task.id, {
-    task_id:     task.id,
-    type:        "nanopayment",
+    task_id:   task.id,
+    type:      "query",
     description: "On-chain state snapshot (monitoring baseline)",
-    arc_tx_hash: q.expense.arc_tx_hash,
-    cost_usdc:   q.expense.amount_usdc,
-    timestamp:   new Date(),
+    cost_usdc: DATA_COST,
+    timestamp: new Date(),
   }, sendTrace);
-
-  const txCount = (q.data as { count: number }).count ?? 0;
 
   const label  = task.task_type === "wallet_watch" ? "wallet" : "contract";
   const result = `Monitoring ${label} ${address}. Baseline: ${txCount} transactions on Arc testnet. Session registered — new activity will be flagged. Ongoing cost: $0.04/hr via Nanopayments.`;
@@ -289,13 +321,10 @@ async function executeWatchTask(
     timestamp:   new Date(),
   }, sendTrace);
 
-  await insertTreasuryEvent({ type: "expense", amount_usdc: q.expense.amount_usdc + 0.04 });
+  const totalCost = DATA_COST + 0.04; // snapshot + first hour monitoring
+  await insertTreasuryEvent({ type: "expense", amount_usdc: 0.04 });
 
-  return {
-    result,
-    cost_usdc:          q.expense.amount_usdc + 0.04,
-    expense_tx_hashes:  [q.expense.arc_tx_hash],
-  };
+  return { result, cost_usdc: totalCost, expense_tx_hashes: [] };
 }
 
 // ─── Handler: general tasks ───────────────────────────────────────────────────
@@ -304,25 +333,30 @@ async function executeGeneralTask(
   task:      Task,
   sendTrace: TraceSender,
 ): Promise<{ result: string; cost_usdc: number; expense_tx_hashes: `0x${string}`[] }> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-
-  const q = await payForResource({
-    url:         `${baseUrl}/api/data-service/general-research`,
-    method:      "POST",
-    body:        { query: task.task },
-    description: "General research query",
-  });
+  await insertTreasuryEvent({ type: "expense", amount_usdc: RESEARCH_COST });
 
   await emitAndRecord(task.id, {
-    task_id:     task.id,
-    type:        "nanopayment",
+    task_id:   task.id,
+    type:      "query",
     description: "General research query",
-    arc_tx_hash: q.expense.arc_tx_hash,
-    cost_usdc:   q.expense.amount_usdc,
-    timestamp:   new Date(),
+    cost_usdc: RESEARCH_COST,
+    timestamp: new Date(),
   }, sendTrace);
 
-  const result = (q.data as { summary: string }).summary ?? "Research complete. See task history for details.";
+  let result = "Research complete. See task history for details.";
+  try {
+    const response = await anthropic.messages.create({
+      model:      "claude-haiku-4-5-20251001",
+      max_tokens: 400,
+      messages:   [{
+        role:    "user",
+        content: `You are a research assistant specializing in Arc testnet, Circle payments, and DeFi. Answer concisely in 2-4 sentences: ${task.task}`,
+      }],
+    });
+    if (response.content[0]?.type === "text") {
+      result = response.content[0].text;
+    }
+  } catch { /* fall through to default result */ }
 
   await emitAndRecord(task.id, {
     task_id:     task.id,
@@ -331,14 +365,8 @@ async function executeGeneralTask(
     timestamp:   new Date(),
   }, sendTrace);
 
-  await insertTreasuryEvent({ type: "expense", amount_usdc: q.expense.amount_usdc });
-
-  return {
-    result,
-    cost_usdc:          q.expense.amount_usdc,
-    expense_tx_hashes:  [q.expense.arc_tx_hash],
-  };
+  return { result, cost_usdc: RESEARCH_COST, expense_tx_hashes: [] };
 }
 
-// Re-export for compatibility (not used in this file but imported in tests)
+// Re-export for compatibility
 export { completeTask, deferTask, rejectTask };

@@ -13,12 +13,12 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "latest",
-    "@circle-fin/developer-controlled-wallets": "latest",
-    "@circle-fin/x402-batching": "latest",
-    "@modelcontextprotocol/sdk": "latest",
+    "@anthropic-ai/sdk": "^0.97.1",
+    "@circle-fin/developer-controlled-wallets": "^10.3.1",
+    "@circle-fin/x402-batching": "^3.0.4",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@types/pg": "^8.20.0",
-    "@vercel/postgres": "latest",
+    "@vercel/postgres": "^0.10.0",
     "dotenv": "^16.0.0",
     "next": "^15.5.18",
     "pg": "^8.21.0",

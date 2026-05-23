@@ -1,34 +1,22 @@
-import { createPublicClient, http, parseUnits, formatUnits, defineChain } from "viem";
-import { executeContractCall, getAgentWalletBalance } from "./circle-wallets";
+import { createPublicClient, http, parseUnits, formatUnits } from "viem";
+import { executeContractCall, getAgentWalletBalance, waitForTransactionHash } from "./circle-wallets";
 import { insertTreasuryEvent } from "./db";
+import { arcTestnet, ARC_USDC_ADDRESS, ARC_USYC_ADDRESS, ARC_TELLER_ADDRESS } from "./chains";
 import type { USYCPosition } from "@/types";
 import { OPERATING_RESERVE_USDC, USYC_SWEEP_MULTIPLIER } from "@/types";
 
-// ─── Arc Testnet chain definition ─────────────────────────────────────────────
-
-export const arcTestnet = defineChain({
-  id:   26,
-  name: "Arc Testnet",
-  nativeCurrency: { name: "USD Coin", symbol: "USDC", decimals: 6 },
-  rpcUrls: {
-    default: { http: [process.env.ARC_RPC_URL ?? "https://rpc.arcnetwork.xyz"] },
-  },
-  blockExplorers: {
-    default: { name: "Arc Explorer", url: "https://explorer.arcnetwork.xyz" },
-  },
-});
+export { arcTestnet };  // re-export for callers that imported from here
 
 export const publicClient = createPublicClient({
   chain:     arcTestnet,
   transport: http(process.env.ARC_RPC_URL ?? "https://rpc.arcnetwork.xyz"),
 });
 
-// ─── Contract addresses ───────────────────────────────────────────────────────
-// Source: docs.arc.io/arc/references/contract-addresses
+// ─── Contract addresses (re-exported from chains.ts) ─────────────────────────
 
-export const USDC_ADDRESS  = "0x3600000000000000000000000000000000000000" as const;
-export const USYC_ADDRESS  = "0xe9185F0c5F296Ed1797AaE4238D26CCaBEadb86C" as const;
-export const TELLER_ADDRESS = "0x9fdF14c5B14173D74C08Af27AebFf39240dC105A" as const;
+export const USDC_ADDRESS   = ARC_USDC_ADDRESS;
+export const USYC_ADDRESS   = ARC_USYC_ADDRESS;
+export const TELLER_ADDRESS = ARC_TELLER_ADDRESS;
 
 // ─── ABI fragments ────────────────────────────────────────────────────────────
 
@@ -126,28 +114,29 @@ export async function sweepIdleUSDCtoUSYC(): Promise<void> {
   const sweepAmount     = balance - OPERATING_RESERVE_USDC;
   const sweepAmountUnits = parseUnits(sweepAmount.toFixed(6), 6).toString();
 
-  // Step 1: approve Teller to spend USDC
-  await executeContractCall({
+  // Step 1: approve Teller to spend USDC — wait for confirmation before depositing
+  const approveTxId = await executeContractCall({
     contractAddress:      USDC_ADDRESS,
     abiFunctionSignature: "approve(address,uint256)",
     abiParameters:        [TELLER_ADDRESS, sweepAmountUnits],
   });
-
-  // Brief delay for approval to land
-  await new Promise(r => setTimeout(r, 5000));
+  await waitForTransactionHash(approveTxId);  // deterministic wait vs 5s sleep
 
   // Step 2: deposit USDC into Teller
-  const txId = await executeContractCall({
+  const depositTxId   = await executeContractCall({
     contractAddress:      TELLER_ADDRESS,
     abiFunctionSignature: "deposit(uint256)",
     abiParameters:        [sweepAmountUnits],
   });
+  const depositTxHash = await waitForTransactionHash(depositTxId);
 
   await insertTreasuryEvent({
     type:       "sweep",
     amount_usdc: sweepAmount,
-    tx_hash:    txId,
-    arc_link:   `${arcTestnet.blockExplorers.default.url}/tx/${txId}`,
+    tx_hash:    depositTxHash ?? depositTxId,
+    arc_link:   depositTxHash
+      ? `${arcTestnet.blockExplorers.default.url}/tx/${depositTxHash}`
+      : undefined,
   });
 }
 
@@ -166,16 +155,19 @@ export async function redeemUSYCIfNeeded(walletAddress: `0x${string}`): Promise<
   const redeemUsycUnits  = redeemUsdcTarget / position.exchange_rate;
   const redeemUnitsRaw   = parseUnits(redeemUsycUnits.toFixed(18), 18).toString();
 
-  const txId = await executeContractCall({
+  const txId   = await executeContractCall({
     contractAddress:      TELLER_ADDRESS,
     abiFunctionSignature: "redeem(uint256)",
     abiParameters:        [redeemUnitsRaw],
   });
+  const txHash = await waitForTransactionHash(txId);
 
   await insertTreasuryEvent({
-    type:       "redeem",
+    type:        "redeem",
     amount_usdc: redeemUsdcTarget,
-    tx_hash:    txId,
-    arc_link:   `${arcTestnet.blockExplorers.default.url}/tx/${txId}`,
+    tx_hash:     txHash ?? txId,
+    arc_link:    txHash
+      ? `${arcTestnet.blockExplorers.default.url}/tx/${txHash}`
+      : undefined,
   });
 }

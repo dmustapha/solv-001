@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>solv-001 — Proposal 1: Terminal Ledger</title>
+<style>
+/* ═══════════════════════════════════════════════════════
+   PROPOSAL 1: TERMINAL LEDGER
+   DNA: DARK-AMBER-DENSE-MONO-GRID
+   Aesthetic: Bloomberg Terminal × Datadog × old-school finance
+   Fonts: JetBrains Mono throughout — data IS the interface
+   Color: near-black + amber + terminal green, no softness
+═══════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #03050A;
+  --surface:  #07090F;
+  --surf-2:   #0B0E17;
+  --border:   #141C28;
+  --border-2: #1C2840;
+  --amber:    #E8A010;
+  --amber-dim:#7A5008;
+  --green:    #00C880;
+  --green-dim:#005038;
+  --red:      #E03848;
+  --blue:     #2888E8;
+  --text-1:   #C0D0E0;
+  --text-2:   #485868;
+  --text-3:   #1C2838;
+  --muted:    #304050;
+}
+
+html, body { background: var(--bg); color: var(--text-1); min-height: 100vh; }
+body { font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 12px; line-height: 1.6; }
+
+a { color: var(--amber); text-decoration: none; }
+a:hover { color: #F0C040; }
+
+/* ─── LANDING PAGE ────────────────────────────────────── */
+
+.landing { max-width: 1100px; margin: 0 auto; padding: 0 32px; }
+
+/* Nav */
+nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0;
+}
+.nav-brand {
+  display: flex;
+  flex-direction: column;
+}
+.nav-brand .id {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--amber);
+  letter-spacing: 0.15em;
+}
+.nav-brand .sub {
+  font-size: 10px;
+  color: var(--text-2);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  font-size: 11px;
+  color: var(--text-2);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.nav-live {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--green);
+}
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* Ticker bar */
+.ticker {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 0;
+  overflow: hidden;
+}
+.ticker-inner {
+  display: flex;
+  gap: 48px;
+  font-size: 11px;
+  color: var(--text-2);
+}
+.ticker-item { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.ticker-item .val { color: var(--text-1); }
+.ticker-item .up { color: var(--green); }
+.ticker-item .down { color: var(--red); }
+
+/* Hero */
+.hero {
+  padding: 72px 0 64px;
+  border-bottom: 1px solid var(--border);
+}
+.hero-tag {
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin-bottom: 20px;
+}
+.hero-headline {
+  font-size: 48px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--text-1);
+  margin-bottom: 8px;
+  letter-spacing: -0.02em;
+}
+.hero-headline .acc { color: var(--amber); }
+.hero-headline .acc2 { color: var(--green); }
+.hero-sub {
+  font-size: 13px;
+  color: var(--text-2);
+  max-width: 580px;
+  line-height: 1.7;
+  margin-bottom: 40px;
+}
+.hero-actions { display: flex; gap: 12px; align-items: center; }
+.btn-primary {
+  background: var(--amber);
+  color: #000;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: none;
+  padding: 10px 24px;
+  cursor: pointer;
+}
+.btn-primary:hover { background: #F0C040; }
+.btn-ghost {
+  background: transparent;
+  color: var(--text-2);
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 1px solid var(--border-2);
+  padding: 10px 20px;
+  cursor: pointer;
+}
+.btn-ghost:hover { border-color: var(--amber-dim); color: var(--text-1); }
+
+/* Stats row */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-bottom: 1px solid var(--border);
+  border-top: 1px solid var(--border);
+}
+.stat-cell {
+  padding: 24px 32px;
+  border-right: 1px solid var(--border);
+}
+.stat-cell:last-child { border-right: none; }
+.stat-label {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  margin-bottom: 8px;
+}
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--amber);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.stat-meta { font-size: 10px; color: var(--text-3); }
+
+/* Flow section */
+.section {
+  padding: 64px 0;
+  border-bottom: 1px solid var(--border);
+}
+.section-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 40px;
+}
+.section-num {
+  font-size: 10px;
+  color: var(--text-3);
+  letter-spacing: 0.2em;
+}
+.section-title {
+  font-size: 11px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.flows-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+}
+.flow-cell {
+  background: var(--surface);
+  padding: 28px 24px;
+}
+.flow-icon {
+  font-size: 20px;
+  margin-bottom: 16px;
+  color: var(--amber);
+}
+.flow-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-1);
+  margin-bottom: 8px;
+}
+.flow-desc {
+  font-size: 11px;
+  color: var(--text-2);
+  line-height: 1.7;
+  margin-bottom: 16px;
+}
+.flow-code {
+  background: var(--surf-2);
+  border: 1px solid var(--border);
+  padding: 10px 12px;
+  font-size: 10px;
+  color: var(--green);
+  line-height: 1.6;
+}
+.flow-code .comment { color: var(--text-3); }
+
+/* Pricing */
+.pricing-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.pricing-table th {
+  text-align: left;
+  padding: 8px 16px;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  border-bottom: 1px solid var(--border);
+}
+.pricing-table td {
+  padding: 12px 16px;
+  font-size: 12px;
+  color: var(--text-1);
+  border-bottom: 1px solid var(--border);
+}
+.pricing-table td:last-child { text-align: right; color: var(--amber); }
+.pricing-table tr:hover td { background: var(--surface); }
+.type-tag {
+  display: inline-block;
+  font-size: 10px;
+  background: var(--surf-2);
+  border: 1px solid var(--border-2);
+  padding: 2px 8px;
+  color: var(--text-2);
+}
+
+/* Footer */
+footer {
+  padding: 24px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--text-3);
+  letter-spacing: 0.1em;
+}
+footer a { color: var(--text-2); }
+footer a:hover { color: var(--text-1); }
+
+/* ─── DASHBOARD PREVIEW ───────────────────────────────── */
+.preview-label {
+  padding: 48px 0 24px;
+}
+.preview-label h2 {
+  font-size: 11px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  margin-bottom: 8px;
+}
+.preview-label p { font-size: 11px; color: var(--text-3); }
+
+.dashboard {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 0;
+  display: grid;
+  grid-template-columns: 280px 1fr 320px;
+  gap: 1px;
+  background: var(--border);
+  height: 520px;
+  margin-bottom: 64px;
+}
+.panel {
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surf-2);
+  flex-shrink: 0;
+}
+.panel-title {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+.panel-badge {
+  font-size: 10px;
+  color: var(--text-3);
+}
+.panel-body { flex: 1; overflow: hidden; padding: 16px; }
+
+/* Treasury panel content */
+.metric-block { margin-bottom: 16px; }
+.metric-label { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-2); margin-bottom: 6px; }
+.metric-value { font-size: 24px; font-weight: 700; color: var(--amber); line-height: 1; }
+.metric-sub { font-size: 10px; color: var(--text-2); margin-top: 4px; }
+
+.ledger-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+}
+.ledger-row:last-child { border-bottom: none; }
+.ledger-row .lbl { color: var(--text-2); }
+.ledger-row .val { color: var(--text-1); font-weight: 500; }
+.val.pos { color: var(--green); }
+.val.neg { color: var(--red); }
+
+/* Trace panel */
+.trace-line {
+  display: flex;
+  gap: 10px;
+  padding: 4px 0;
+  font-size: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.trace-icon { color: var(--green); flex-shrink: 0; width: 12px; }
+.trace-text { color: var(--text-2); flex: 1; line-height: 1.4; }
+.trace-hash { color: var(--blue); font-size: 10px; }
+.trace-time { color: var(--text-3); flex-shrink: 0; }
+
+/* History panel */
+.task-row {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.task-row:last-child { border-bottom: none; }
+.task-header { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 4px; }
+.task-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); margin-top: 4px; flex-shrink: 0; }
+.task-dot.yellow { background: var(--amber); }
+.task-dot.red { background: var(--red); }
+.task-dot.blue { background: var(--blue); }
+.task-text { font-size: 11px; color: var(--text-1); line-height: 1.4; flex: 1; }
+.task-meta { display: flex; gap: 12px; font-size: 10px; color: var(--text-2); padding-left: 14px; }
+.task-meta .pos { color: var(--green); }
+.task-meta .neg { color: var(--red); }
+
+/* Form panel (below treasury in left col) */
+.form-section { border-top: 1px solid var(--border); }
+.form-area { padding: 12px 16px; }
+.form-label { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-2); margin-bottom: 8px; }
+.form-textarea {
+  width: 100%;
+  background: var(--surf-2);
+  border: 1px solid var(--border-2);
+  color: var(--text-1);
+  font-family: inherit;
+  font-size: 11px;
+  padding: 8px 10px;
+  resize: none;
+  outline: none;
+  line-height: 1.5;
+}
+.form-textarea::placeholder { color: var(--text-3); }
+.form-textarea:focus { border-color: var(--amber-dim); }
+.form-row { display: flex; gap: 8px; margin-top: 8px; align-items: center; }
+.form-select {
+  flex: 1;
+  background: var(--surf-2);
+  border: 1px solid var(--border-2);
+  color: var(--text-2);
+  font-family: inherit;
+  font-size: 10px;
+  padding: 6px 8px;
+  outline: none;
+  appearance: none;
+}
+.form-submit {
+  background: var(--amber);
+  color: #000;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: none;
+  padding: 7px 16px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.wallet-bar {
+  background: var(--surf-2);
+  border: 1px solid var(--green-dim);
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  margin-bottom: 8px;
+}
+.wallet-bar .addr { color: var(--text-2); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wallet-bar .balance { color: var(--green); flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<div class="landing">
+
+  <nav>
+    <div class="nav-brand">
+      <span class="id">SOLV-001</span>
+      <span class="sub">Autonomous Treasury Agent · Arc Testnet</span>
+    </div>
+    <div class="nav-right">
+      <span>Arc Testnet</span>
+      <span>·</span>
+      <span>Circle Stack</span>
+      <span>·</span>
+      <span class="nav-live"><span class="dot"></span>Live</span>
+    </div>
+  </nav>
+
+</div>
+
+<!-- Ticker bar -->
+<div class="ticker">
+  <div class="landing">
+    <div class="ticker-inner">
+      <div class="ticker-item">USDC.ARC <span class="val">$1.0000</span></div>
+      <div class="ticker-item">USYC.APY <span class="val up">+4.85%</span></div>
+      <div class="ticker-item">TASKS.TODAY <span class="val">12</span></div>
+      <div class="ticker-item">INCOME.TODAY <span class="val up">+$0.2400</span></div>
+      <div class="ticker-item">EXPENSE.TODAY <span class="val down">-$0.0420</span></div>
+      <div class="ticker-item">NET.TODAY <span class="val up">+$0.1980</span></div>
+      <div class="ticker-item">RESERVE <span class="val">$10.0000</span></div>
+      <div class="ticker-item">USYC.POS <span class="val">$4.2200</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="landing">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-tag">// autonomous ai treasury agent</div>
+    <h1 class="hero-headline">
+      It earns.<br>
+      It <span class="acc">reasons</span>.<br>
+      It <span class="acc2">compounds</span>.
+    </h1>
+    <p class="hero-sub">
+      solv-001 is an on-chain AI agent that accepts micropayments for blockchain analysis tasks,
+      reasons about every decision using Claude, and automatically sweeps idle capital into
+      yield-bearing USYC — all without human intervention.
+    </p>
+    <div class="hero-actions">
+      <button class="btn-primary">Open Dashboard →</button>
+      <button class="btn-ghost">View on Arc Explorer ↗</button>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat-cell">
+      <div class="stat-label">Tasks Completed</div>
+      <div class="stat-value">247</div>
+      <div class="stat-meta">all-time</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-label">Total Income</div>
+      <div class="stat-value">$12.34</div>
+      <div class="stat-meta">USDC earned</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-label">USYC Position</div>
+      <div class="stat-value">$4.22</div>
+      <div class="stat-meta">4.85% APY</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-label">Net Margin</div>
+      <div class="stat-value">82%</div>
+      <div class="stat-meta">avg per task</div>
+    </div>
+  </div>
+
+  <!-- How it works -->
+  <div class="section">
+    <div class="section-heading">
+      <span class="section-num">[01]</span>
+      <span class="section-title">Three-Layer Financial Architecture</span>
+    </div>
+    <div class="flows-grid">
+      <div class="flow-cell">
+        <div class="flow-icon">↓</div>
+        <div class="flow-title">EIP-3009 Income</div>
+        <div class="flow-desc">
+          Clients sign a TransferWithAuthorization off-chain. Circle's Gateway settles the USDC transfer
+          on Arc without a separate approval transaction — one signature, instant settlement.
+        </div>
+        <div class="flow-code">
+<span class="comment">// client signs typed data</span>
+signTypedData({
+  type: "TransferWithAuthorization",
+  from: client,
+  to:   agent,
+  value: price,
+})
+<span class="comment">// Circle Gateway settles →</span>
+<span class="comment">// USDC credited on-chain</span>
+        </div>
+      </div>
+      <div class="flow-cell">
+        <div class="flow-icon">↑</div>
+        <div class="flow-title">x402 Expenses</div>
+        <div class="flow-desc">
+          When the agent needs external data, it calls Arc RPC directly — no micropayment needed
+          since it's the same platform. Expenses are tracked internally for transparency.
+        </div>
+        <div class="flow-code">
+<span class="comment">// agent calls Arc RPC</span>
+arc_rpc.eth_call({
+  to:   contract,
+  data: calldata,
+})
+<span class="comment">// result returned instantly</span>
+<span class="comment">// cost tracked: $0.005</span>
+        </div>
+      </div>
+      <div class="flow-cell">
+        <div class="flow-icon">◈</div>
+        <div class="flow-title">USYC Yield Engine</div>
+        <div class="flow-desc">
+          After every task, idle USDC above the $10 operating reserve is automatically deposited into
+          Hashnote USYC via the Teller contract. Redeemed automatically when reserves run low.
+        </div>
+        <div class="flow-code">
+<span class="comment">// sweep logic</span>
+if balance > reserve * 1.5:
+  approve(teller, amount)
+  teller.deposit(amount)
+  <span class="comment">// USYC minted ~4.85% APY</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pricing -->
+  <div class="section">
+    <div class="section-heading">
+      <span class="section-num">[02]</span>
+      <span class="section-title">Task Pricing Schedule</span>
+    </div>
+    <table class="pricing-table">
+      <thead>
+        <tr>
+          <th>Task Type</th>
+          <th>Description</th>
+          <th>Est. Cost</th>
+          <th>Price</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="type-tag">contract_summary</span></td>
+          <td>Read and summarize any Arc contract bytecode</td>
+          <td style="color: var(--text-2)">~$0.003</td>
+          <td>$0.020</td>
+        </tr>
+        <tr>
+          <td><span class="type-tag">wallet_intelligence</span></td>
+          <td>Transaction history, USDC flows, contract interactions</td>
+          <td style="color: var(--text-2)">~$0.015</td>
+          <td>$0.050</td>
+        </tr>
+        <tr>
+          <td><span class="type-tag">watch_task</span></td>
+          <td>Monitor an address for activity changes</td>
+          <td style="color: var(--text-2)">~$0.005</td>
+          <td>$0.030</td>
+        </tr>
+        <tr>
+          <td><span class="type-tag">general</span></td>
+          <td>Freeform blockchain research via Claude</td>
+          <td style="color: var(--text-2)">~$0.008</td>
+          <td>$0.010</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Dashboard Preview -->
+  <div class="preview-label">
+    <h2>[03] Dashboard — Live Interface</h2>
+    <p>Connects to Arc testnet in real time · wallet-gated payment · SSE streaming trace</p>
+  </div>
+
+  <div class="dashboard">
+    <!-- Left: Treasury + Form -->
+    <div class="panel" style="grid-row: 1; display: flex; flex-direction: column;">
+      <div class="panel-header">
+        <span class="panel-title">Treasury</span>
+        <span class="panel-badge" style="color: var(--amber); font-size: 10px;">14:22:08</span>
+      </div>
+      <div class="panel-body" style="overflow-y: auto;">
+        <div class="metric-block">
+          <div class="metric-label">USDC Balance</div>
+          <div class="metric-value">$10.4820</div>
+        </div>
+        <div class="metric-block">
+          <div class="metric-label">USYC Position</div>
+          <div class="metric-value" style="font-size: 18px; color: #E09820;">$4.2200</div>
+          <div class="metric-sub">4.85% APY · Hashnote</div>
+        </div>
+        <div class="ledger-row"><span class="lbl">Pending income</span><span class="val pos">+$0.0200</span></div>
+        <div style="margin-top: 12px; margin-bottom: 6px; font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-3);">Today</div>
+        <div class="ledger-row"><span class="lbl">Income</span><span class="val pos">+$0.2400</span></div>
+        <div class="ledger-row"><span class="lbl">Expense</span><span class="val neg">-$0.0420</span></div>
+        <div class="ledger-row"><span class="lbl">Net</span><span class="val pos">+$0.1980</span></div>
+        <div style="margin-top: 12px; margin-bottom: 6px; font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-3);">All Time</div>
+        <div class="ledger-row"><span class="lbl">Tasks</span><span class="val">247</span></div>
+        <div class="ledger-row"><span class="lbl">Income</span><span class="val pos">$12.34</span></div>
+      </div>
+      <div class="form-section">
+        <div class="form-area">
+          <div class="form-label">Submit Task</div>
+          <div class="wallet-bar">
+            <span class="dot" style="background: var(--green); animation: none;"></span>
+            <span class="addr">0x1234...abcd</span>
+            <span class="balance">$2.50</span>
+          </div>
+          <textarea class="form-textarea" rows="3" placeholder="e.g., Summarize contract at 0x9fdF..."></textarea>
+          <div class="form-row">
+            <select class="form-select">
+              <option>contract_summary</option>
+              <option>wallet_intelligence</option>
+              <option>watch_task</option>
+              <option>general</option>
+            </select>
+            <button class="form-submit">RUN — $0.02</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center: Trace -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Execution Trace</span>
+        <span style="display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--blue);">
+          <span class="dot" style="background: var(--blue);"></span>ACTIVE
+        </span>
+      </div>
+      <div class="panel-body" style="overflow-y: auto;">
+        <div style="font-size: 10px; color: var(--text-2); margin-bottom: 12px; background: var(--surf-2); border: 1px solid var(--border); padding: 10px; line-height: 1.7;">
+          Treasury balance $10.48 exceeds operating reserve $10.00. Queue depth: 1 task pending.
+          Incoming task type wallet_intelligence at $0.05 per execution. Estimated cost $0.015.
+          Net margin positive at ~70%. <span style="color: var(--amber);">→ ACCEPT</span>
+        </div>
+        <div class="trace-line">
+          <span class="trace-icon">↓</span>
+          <span class="trace-text">Payment received: +$0.0500 USDC</span>
+          <span class="trace-hash">0x4a2f↗</span>
+          <span class="trace-time">14:22:01</span>
+        </div>
+        <div class="trace-line">
+          <span class="trace-icon" style="color: var(--blue);">→</span>
+          <span class="trace-text">Arc RPC: getTransactionCount(0x1234...)</span>
+          <span class="trace-time">14:22:02</span>
+        </div>
+        <div class="trace-line">
+          <span class="trace-icon" style="color: var(--blue);">→</span>
+          <span class="trace-text">Arc RPC: getLogs (contract interactions)</span>
+          <span class="trace-time">14:22:03</span>
+        </div>
+        <div class="trace-line">
+          <span class="trace-icon" style="color: var(--blue);">→</span>
+          <span class="trace-text">Arc RPC: Transfer events (USDC sends/receives)</span>
+          <span class="trace-time">14:22:04</span>
+        </div>
+        <div class="trace-line">
+          <span class="trace-icon" style="color: var(--blue);">→</span>
+          <span class="trace-text">Claude: generating wallet intelligence report</span>
+          <span class="trace-time">14:22:05</span>
+        </div>
+        <div class="trace-line">
+          <span class="trace-icon">✓</span>
+          <span class="trace-text" style="color: var(--green);">Task complete · net +$0.035 USDC</span>
+          <span class="trace-time">14:22:08</span>
+        </div>
+        <div class="trace-line" style="border: none;">
+          <span class="trace-icon" style="color: var(--amber);">◈</span>
+          <span class="trace-text" style="color: var(--text-2);">Sweep check: balance $10.53 > $15.00 threshold — no sweep needed</span>
+          <span class="trace-time">14:22:09</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: History -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Task History</span>
+        <span class="panel-badge">247</span>
+      </div>
+      <div class="panel-body" style="overflow-y: auto; padding: 12px 16px;">
+        <div class="task-row">
+          <div class="task-header"><span class="task-dot"></span><span class="task-text">Summarize USYC teller contract at 0x9fdF...</span></div>
+          <div class="task-meta"><span>contract_summary</span><span class="pos">+$0.020</span><span class="neg">-$0.003</span><span class="pos">=$0.017</span></div>
+        </div>
+        <div class="task-row">
+          <div class="task-header"><span class="task-dot"></span><span class="task-text">Wallet intelligence report for 0xAbCd...</span></div>
+          <div class="task-meta"><span>wallet_intelligence</span><span class="pos">+$0.050</span><span class="neg">-$0.015</span><span class="pos">=$0.035</span></div>
+        </div>
+        <div class="task-row">
+          <div class="task-header"><span class="task-dot yellow"></span><span class="task-text">Watch address 0x7890... for inbound transfers</span></div>
+          <div class="task-meta"><span>watch_task</span><span class="pos">+$0.030</span></div>
+        </div>
+        <div class="task-row">
+          <div class="task-header"><span class="task-dot"></span><span class="task-text">What is the current Arc testnet gas price?</span></div>
+          <div class="task-meta"><span>general</span><span class="pos">+$0.010</span><span class="neg">-$0.008</span><span class="pos">=$0.002</span></div>
+        </div>
+        <div class="task-row">
+          <div class="task-header"><span class="task-dot red"></span><span class="task-text">Monitor USYC oracle for price deviations</span></div>
+          <div class="task-meta"><span>watch_task</span><span class="pos">+$0.030</span><span style="color: var(--red);">REJECTED</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <span>solv-001 · Arc Testnet · Circle 4-tool stack</span>
+    <span><a href="#">GitHub</a> · <a href="#">Arc Explorer</a> · <a href="#">Circle Docs</a></span>
+  </footer>
+
+</div>
+</body>
+</html>

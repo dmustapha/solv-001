@@ -35,8 +35,8 @@ export async function getExpenseBalance(): Promise<{ usdc: number }> {
 }
 
 // ─── Pay for a resource via x402 ─────────────────────────────────────────────
-// client.pay() verified working in wire phase. Falls back to direct fetch
-// with ?demo=true if GatewayClient throws (e.g. unfunded expense wallet).
+// GatewayClient signs EIP-3009 with EXPENSE_WALLET_PRIVATE_KEY and retries.
+// Any failure throws — callers must handle and surface errors explicitly.
 
 export async function payForResource(params: {
   url:         string;
@@ -45,44 +45,19 @@ export async function payForResource(params: {
   description: string;
   max_usdc?:   number;
 }): Promise<{ data: unknown; expense: NanopaymentExpense }> {
-  try {
-    const client = getGatewayClient();
-    const response = await client.pay<unknown>(params.url, {
-      method: (params.method ?? "GET") as "GET" | "POST" | "PUT" | "DELETE",
-      body:   params.body,
-    });
+  const client = getGatewayClient();
+  const response = await client.pay<unknown>(params.url, {
+    method: (params.method ?? "GET") as "GET" | "POST" | "PUT" | "DELETE",
+    body:   params.body,
+  });
 
-    return {
-      data:    response.data,
-      expense: {
-        description: params.description,
-        amount_usdc: parseFloat(response.formattedAmount ?? "0.005"),
-        arc_tx_hash: (response.transaction ?? "0x0") as `0x${string}`,
-        timestamp:   new Date(),
-      },
-    };
-  } catch {
-    // Fallback: direct fetch with demo bypass — used when expense wallet is unfunded
-    const demoUrl = params.url.includes("?")
-      ? `${params.url}&demo=true`
-      : `${params.url}?demo=true`;
-
-    const response = await fetch(demoUrl, {
-      method:  params.method ?? "GET",
-      headers: { "Content-Type": "application/json" },
-      body:    params.body ? JSON.stringify(params.body) : undefined,
-    });
-
-    const data = await response.json();
-
-    return {
-      data,
-      expense: {
-        description: params.description,
-        amount_usdc: parseFloat(response.headers.get("x-payment-amount") ?? "0.005"),
-        arc_tx_hash: (response.headers.get("x-payment-tx-hash") ?? "0x0") as `0x${string}`,
-        timestamp:   new Date(),
-      },
-    };
-  }
+  return {
+    data:    response.data,
+    expense: {
+      description: params.description,
+      amount_usdc: parseFloat(response.formattedAmount ?? "0.005"),
+      arc_tx_hash: (response.transaction ?? "0x0") as `0x${string}`,
+      timestamp:   new Date(),
+    },
+  };
 }

@@ -93,10 +93,10 @@ export async function transferUSDC(params: {
 
 export async function waitForTransactionHash(txId: string): Promise<`0x${string}` | null> {
   const client = getClient();
-  const maxAttempts = 20;
+  const maxAttempts = 8;
 
   for (let i = 0; i < maxAttempts; i++) {
-    await new Promise(r => setTimeout(r, 3000));
+    await new Promise(r => setTimeout(r, 2000));
     const response = await client.getTransaction({ id: txId });
     const tx       = response.data!.transaction;
 

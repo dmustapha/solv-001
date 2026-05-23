@@ -53,7 +53,7 @@ export async function* streamTreasuryReasoning(
 ): AsyncGenerator<{ chunk?: string; decision?: ReasoningDecision }> {
   const stream = await anthropic.messages.create({
     model:      "claude-sonnet-4-6",
-    max_tokens: 200,
+    max_tokens: 600,
     stream:     true,
     system:     TREASURY_SYSTEM_PROMPT,
     messages:   [{ role: "user", content: buildReasoningPrompt(ctx) }],

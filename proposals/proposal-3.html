@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>solv-001 — Proposal 3: Protocol Command</title>
+<style>
+/* ═══════════════════════════════════════════════════════
+   PROPOSAL 3: PROTOCOL COMMAND
+   DNA: DARK-VIOLET-SIDEBAR-EDITORIAL-CLEAN
+   Aesthetic: Notion dark × Linear × command palette
+   Fonts: Inter bold display, JetBrains Mono for code only
+   Color: near-black slate + violet accent + sage green secondary
+   Key differences: editorial landing, sidebar-first dashboard,
+   maximum focus on content — chrome nearly invisible
+═══════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #06060A;
+  --surface:   #0E0E16;
+  --surf-2:    #141420;
+  --surf-3:    #1A1A28;
+  --border:    #1E1E30;
+  --border-2:  #282840;
+  --violet:    #7C5AF7;
+  --violet-dim:#1E1640;
+  --violet-mid:#3D2880;
+  --sage:      #4EC9A0;
+  --sage-dim:  #0C2820;
+  --amber:     #E09820;
+  --red:       #E84060;
+  --blue:      #5890F0;
+  --text-1:    #E0E0F0;
+  --text-2:    #606080;
+  --text-3:    #2A2A40;
+  --shadow:    0 8px 32px rgba(0,0,0,0.6), 0 2px 8px rgba(0,0,0,0.4);
+}
+
+html, body { background: var(--bg); color: var(--text-1); min-height: 100vh; }
+body { font-family: 'Inter', -apple-system, sans-serif; font-size: 14px; line-height: 1.6; }
+.mono { font-family: 'JetBrains Mono', monospace; }
+a { color: var(--violet); text-decoration: none; }
+a:hover { opacity: .8; }
+
+/* ─── LANDING ─────────────────────────────────────────── */
+.wrap { max-width: 1160px; margin: 0 auto; padding: 0 48px; }
+
+/* Nav */
+nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28px 0;
+  border-bottom: 1px solid var(--border);
+}
+.brand {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-1);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.brand-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--violet), var(--sage));
+}
+.nav-items { display: flex; align-items: center; gap: 24px; }
+.nav-link { font-size: 13px; font-weight: 500; color: var(--text-2); }
+.nav-link:hover { color: var(--text-1); }
+.nav-status {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--sage);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(78,201,160,.2);
+  padding: 4px 10px;
+  border-radius: 4px;
+}
+.live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--sage); animation: glow 2s infinite; }
+@keyframes glow { 0%,100%{opacity:1;box-shadow:0 0 4px var(--sage)} 50%{opacity:.4;box-shadow:none} }
+
+/* Hero */
+.hero { padding: 96px 0 72px; }
+.hero-kicker {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  color: var(--violet);
+  text-transform: uppercase;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.hero-kicker::before { content: '//'; color: var(--text-3); }
+.hero-h1 {
+  font-size: 72px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: var(--text-1);
+  margin-bottom: 32px;
+  max-width: 840px;
+}
+.hero-h1 em {
+  font-style: normal;
+  background: linear-gradient(120deg, var(--violet) 0%, var(--sage) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.hero-body {
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--text-2);
+  line-height: 1.75;
+  max-width: 600px;
+  margin-bottom: 48px;
+}
+.hero-actions { display: flex; gap: 14px; align-items: center; }
+.btn-primary {
+  background: var(--violet);
+  color: #fff;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  padding: 13px 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background .15s;
+}
+.btn-primary:hover { background: #9070FF; }
+.btn-ghost {
+  color: var(--text-2);
+  font-size: 14px;
+  font-weight: 500;
+  background: transparent;
+  border: 1px solid var(--border-2);
+  padding: 13px 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: color .15s, border-color .15s;
+}
+.btn-ghost:hover { color: var(--text-1); border-color: var(--border-2); }
+
+/* Metrics strip */
+.metrics-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 96px;
+}
+.metric {
+  padding: 28px 0;
+  border-right: 1px solid var(--border);
+}
+.metric:first-child { padding-left: 0; }
+.metric:last-child { border-right: none; padding-left: 40px; }
+.metric + .metric { padding-left: 40px; }
+.metric-lbl { font-size: 12px; font-weight: 500; color: var(--text-2); margin-bottom: 10px; }
+.metric-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  font-weight: 500;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.v-violet { color: var(--violet); }
+.v-sage   { color: var(--sage); }
+.v-amber  { color: var(--amber); }
+.v-plain  { color: var(--text-1); }
+.metric-note { font-size: 12px; color: var(--text-3); }
+
+/* Protocol section */
+.proto-section { margin-bottom: 96px; }
+.proto-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--violet);
+  margin-bottom: 24px;
+}
+.proto-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1px;
+  background: var(--border);
+}
+.proto-cell {
+  background: var(--surface);
+  padding: 36px 32px;
+}
+.proto-cell:hover { background: var(--surf-2); }
+.proto-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-3);
+  margin-bottom: 12px;
+}
+.proto-name {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-1);
+  margin-bottom: 12px;
+}
+.proto-tag {
+  display: inline-block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+}
+.pt-income  { background: rgba(78,201,160,.1); color: var(--sage); border: 1px solid rgba(78,201,160,.2); }
+.pt-expense { background: rgba(224,152,32,.1);  color: var(--amber); border: 1px solid rgba(224,152,32,.2); }
+.pt-yield   { background: rgba(124,90,247,.1);  color: var(--violet); border: 1px solid rgba(124,90,247,.2); }
+.proto-desc {
+  font-size: 14px;
+  color: var(--text-2);
+  line-height: 1.75;
+  margin-bottom: 20px;
+}
+.proto-technical {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-3);
+  line-height: 1.7;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.proto-technical .hl { color: var(--sage); }
+
+/* Pricing section */
+.price-section { margin-bottom: 96px; }
+.price-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--violet); margin-bottom: 24px; }
+.price-table { width: 100%; border-collapse: collapse; }
+.price-table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-3);
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.price-table th:last-child { text-align: right; }
+.price-table td {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+.price-table tr:hover td { background: rgba(124,90,247,.03); }
+.pt-name { font-weight: 600; color: var(--text-1); margin-bottom: 4px; }
+.pt-desc { font-size: 12px; color: var(--text-2); }
+.pt-code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-3);
+  background: var(--surf-2);
+  border: 1px solid var(--border);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+.pt-price {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--violet);
+  text-align: right;
+}
+
+/* Footer */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 32px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--text-3);
+}
+footer a { color: var(--text-2); margin-left: 24px; }
+footer a:hover { color: var(--text-1); }
+
+/* ─── DASHBOARD ───────────────────────────────────────── */
+.dash-preview { margin-bottom: 96px; }
+.dash-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--violet); margin-bottom: 12px; }
+.dash-sub { font-size: 15px; color: var(--text-2); margin-bottom: 32px; line-height: 1.6; }
+
+.dashboard {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  height: 560px;
+}
+
+/* App chrome */
+.chrome {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.chrome-brand {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-1);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.chrome-dot { width: 8px; height: 8px; border-radius: 50%; background: linear-gradient(135deg, var(--violet), var(--sage)); }
+.chrome-divider { width: 1px; height: 16px; background: var(--border); }
+.chrome-tabs { display: flex; gap: 0; }
+.chrome-tab {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-2);
+  padding: 4px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.chrome-tab.active { background: var(--surf-2); color: var(--text-1); }
+.chrome-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.chrome-time { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-3); }
+.live-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--sage);
+  border: 1px solid rgba(78,201,160,.2);
+  padding: 2px 8px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Main layout: sidebar + content */
+.dash-body { display: flex; flex: 1; overflow: hidden; }
+
+/* Sidebar */
+.sidebar {
+  width: 280px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.sidebar-section { padding: 16px; border-bottom: 1px solid var(--border); }
+.sidebar-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-3); margin-bottom: 12px; }
+.balance-hero { font-family: 'JetBrains Mono', monospace; font-size: 26px; font-weight: 500; color: var(--violet); line-height: 1; margin-bottom: 4px; }
+.balance-sub { font-size: 11px; color: var(--text-3); }
+.yield-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.yield-row:last-child { border-bottom: none; }
+.y-lbl { color: var(--text-2); }
+.y-val { font-family: 'JetBrains Mono', monospace; font-weight: 500; }
+.y-sage  { color: var(--sage); }
+.y-amber { color: var(--amber); }
+.y-red   { color: var(--red); }
+.y-blue  { color: var(--blue); }
+.y-muted { color: var(--text-1); }
+
+/* Form in sidebar */
+.sidebar-form { padding: 14px 16px; flex: 1; overflow-y: auto; }
+.wallet-connected {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(78,201,160,.06);
+  border: 1px solid rgba(78,201,160,.15);
+  border-radius: 5px;
+  padding: 7px 10px;
+  margin-bottom: 12px;
+  font-size: 11px;
+}
+.w-addr { font-family: 'JetBrains Mono', monospace; color: var(--text-2); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.w-bal { font-family: 'JetBrains Mono', monospace; color: var(--sage); flex-shrink: 0; }
+.sf-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); margin-bottom: 8px; }
+.sf-textarea {
+  width: 100%;
+  background: var(--surf-2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text-1);
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  padding: 9px 11px;
+  resize: none;
+  outline: none;
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+.sf-textarea::placeholder { color: var(--text-3); }
+.sf-textarea:focus { border-color: rgba(124,90,247,.4); }
+.sf-select {
+  width: 100%;
+  background: var(--surf-2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text-2);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 8px 10px;
+  outline: none;
+  appearance: none;
+  margin-bottom: 10px;
+}
+.sf-submit {
+  width: 100%;
+  background: var(--violet);
+  color: #fff;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  border-radius: 5px;
+  padding: 10px;
+  cursor: pointer;
+}
+.sf-submit:hover { background: #9070FF; }
+
+/* Main content */
+.main-content { flex: 1; display: grid; grid-template-columns: 1fr 320px; overflow: hidden; }
+
+/* Trace */
+.trace-pane {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+  overflow: hidden;
+}
+.pane-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.pane-title { font-size: 12px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.08em; }
+.pane-status { font-size: 11px; color: var(--violet); display: flex; align-items: center; gap: 5px; font-family: 'JetBrains Mono', monospace; }
+.pane-body { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 2px; }
+
+.reason-block {
+  background: rgba(124,90,247,.05);
+  border: 1px solid rgba(124,90,247,.12);
+  border-radius: 6px;
+  padding: 14px;
+  margin-bottom: 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: rgba(224,224,240,.5);
+  line-height: 1.7;
+}
+.reason-head { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(124,90,247,.5); margin-bottom: 8px; font-family: 'Inter', sans-serif; }
+.reason-decision { color: var(--sage); font-weight: 500; }
+
+.trace-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(30,30,48,.5);
+  font-size: 12px;
+}
+.trace-row:last-child { border-bottom: none; }
+.tr-icon { font-size: 12px; flex-shrink: 0; margin-top: 2px; width: 14px; text-align: center; }
+.tr-text { flex: 1; color: var(--text-2); line-height: 1.4; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+.tr-hash { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--blue); }
+.tr-time { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-3); flex-shrink: 0; }
+
+/* History pane */
+.history-pane { display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
+.history-list { flex: 1; overflow-y: auto; }
+.h-item { padding: 12px 16px; border-bottom: 1px solid var(--border); cursor: pointer; }
+.h-item:hover { background: var(--surface); }
+.h-row1 { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 5px; }
+.h-status { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+.h-text { font-size: 12px; color: var(--text-1); line-height: 1.4; flex: 1; }
+.h-row2 { display: flex; align-items: center; gap: 8px; padding-left: 14px; flex-wrap: wrap; }
+.h-tag { font-family: 'JetBrains Mono', monospace; font-size: 10px; background: var(--surf-2); border: 1px solid var(--border); padding: 1px 6px; border-radius: 3px; color: var(--text-3); }
+.h-income { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--sage); }
+.h-cost   { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--red); }
+.h-net    { font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+.h-date   { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-3); margin-left: auto; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <nav>
+    <div class="brand">
+      <div class="brand-dot"></div>
+      solv-001
+    </div>
+    <div class="nav-items">
+      <a class="nav-link" href="#">Protocol</a>
+      <a class="nav-link" href="#">Pricing</a>
+      <a class="nav-link" href="#">Explorer</a>
+      <div class="nav-status"><span class="live-dot"></span> live</div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-kicker">autonomous treasury agent</div>
+    <h1 class="hero-h1">
+      Blockchain intelligence<br>
+      <em>on demand.</em>
+    </h1>
+    <p class="hero-body">
+      solv-001 is an AI agent that earns USDC for blockchain analysis tasks, reasons about every
+      decision using Claude's extended thinking, and compounds idle capital in Hashnote USYC —
+      all without human intervention.
+    </p>
+    <div class="hero-actions">
+      <button class="btn-primary">Open app →</button>
+      <button class="btn-ghost">View on Arc Explorer</button>
+    </div>
+  </div>
+
+  <!-- Metrics -->
+  <div class="metrics-strip">
+    <div class="metric">
+      <div class="metric-lbl">Tasks completed</div>
+      <div class="metric-val v-violet">247</div>
+      <div class="metric-note">all-time</div>
+    </div>
+    <div class="metric">
+      <div class="metric-lbl">Total earned</div>
+      <div class="metric-val v-sage">$12.34</div>
+      <div class="metric-note">USDC on Arc</div>
+    </div>
+    <div class="metric">
+      <div class="metric-lbl">USYC position</div>
+      <div class="metric-val v-amber">$4.22</div>
+      <div class="metric-note">4.85% APY</div>
+    </div>
+    <div class="metric">
+      <div class="metric-lbl">Average margin</div>
+      <div class="metric-val v-plain">82%</div>
+      <div class="metric-note">per task</div>
+    </div>
+  </div>
+
+  <!-- Protocol -->
+  <div class="proto-section">
+    <div class="proto-label">The Protocol</div>
+    <div class="proto-grid">
+      <div class="proto-cell">
+        <div class="proto-num">01</div>
+        <div class="proto-name">Income Layer</div>
+        <div><span class="proto-tag pt-income">EIP-3009</span></div>
+        <p class="proto-desc">
+          Clients sign a <code style="font-family:monospace; font-size:12px;">TransferWithAuthorization</code> typed
+          message offline. Circle's Gateway settles the USDC transfer on Arc — no approval step, no
+          second wallet interaction. One signature → value credited.
+        </p>
+        <div class="proto-technical">
+          signTypedData(TransferWithAuthorization)<br>
+          → <span class="hl">Circle Gateway</span> /v1/payments/settle<br>
+          → USDC on-chain, agent wallet credited
+        </div>
+      </div>
+      <div class="proto-cell">
+        <div class="proto-num">02</div>
+        <div class="proto-name">Data Layer</div>
+        <div><span class="proto-tag pt-expense">Arc RPC</span></div>
+        <p class="proto-desc">
+          The agent calls Arc testnet RPC directly for blockchain data — transaction counts,
+          event logs, bytecode, USDC transfers. Claude synthesizes raw chain data into structured
+          intelligence. All costs logged to the treasury ledger.
+        </p>
+        <div class="proto-technical">
+          eth_getTransactionCount, eth_getLogs<br>
+          eth_getCode → <span class="hl">Claude</span> synthesis<br>
+          → expense recorded: $0.005–$0.015
+        </div>
+      </div>
+      <div class="proto-cell">
+        <div class="proto-num">03</div>
+        <div class="proto-name">Capital Layer</div>
+        <div><span class="proto-tag pt-yield">USYC</span></div>
+        <p class="proto-desc">
+          Post-task, idle USDC above the $10 operating reserve is swept into Hashnote USYC via
+          the Teller contract, earning ~4.85% APY. When reserves drop, USYC is redeemed
+          automatically to restore liquidity.
+        </p>
+        <div class="proto-technical">
+          balance &gt; reserve × 1.5:<br>
+          USDC.approve → <span class="hl">Teller.deposit</span><br>
+          → USYC minted, yield accrues daily
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pricing -->
+  <div class="price-section">
+    <div class="price-label">Pricing</div>
+    <table class="price-table">
+      <thead>
+        <tr>
+          <th>Task</th>
+          <th>Type identifier</th>
+          <th style="text-align:right">Price (USDC)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <div class="pt-name">Contract Summary</div>
+            <div class="pt-desc">Read and summarize any Arc smart contract from bytecode</div>
+          </td>
+          <td><span class="pt-code">contract_summary</span></td>
+          <td class="pt-price">$0.020</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="pt-name">Wallet Intelligence</div>
+            <div class="pt-desc">Transaction history, USDC flows, contract interaction patterns</div>
+          </td>
+          <td><span class="pt-code">wallet_intelligence</span></td>
+          <td class="pt-price">$0.050</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="pt-name">Watch Task</div>
+            <div class="pt-desc">Monitor an address for new transactions or activity changes</div>
+          </td>
+          <td><span class="pt-code">watch_task</span></td>
+          <td class="pt-price">$0.030</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="pt-name">General Research</div>
+            <div class="pt-desc">Freeform blockchain research answered by Claude</div>
+          </td>
+          <td><span class="pt-code">general</span></td>
+          <td class="pt-price">$0.010</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Dashboard preview -->
+  <div class="dash-preview">
+    <div class="dash-label">Dashboard</div>
+    <p class="dash-sub">Live agent interface — connect wallet to submit tasks and watch the execution trace in real time.</p>
+
+    <div class="dashboard">
+      <!-- Chrome bar -->
+      <div class="chrome">
+        <div class="chrome-brand">
+          <div class="chrome-dot"></div>
+          solv-001
+        </div>
+        <div class="chrome-divider"></div>
+        <div class="chrome-tabs">
+          <div class="chrome-tab active">Dashboard</div>
+          <div class="chrome-tab">History</div>
+        </div>
+        <div class="chrome-right">
+          <span class="chrome-time mono">14:22:08</span>
+          <div class="live-badge"><span class="live-dot"></span>live</div>
+        </div>
+      </div>
+
+      <!-- Dashboard body -->
+      <div class="dash-body">
+
+        <!-- Sidebar -->
+        <div class="sidebar">
+          <div class="sidebar-section">
+            <div class="sidebar-label">USDC Balance</div>
+            <div class="balance-hero">$10.4820</div>
+            <div class="balance-sub">operating reserve $10.00</div>
+          </div>
+          <div class="sidebar-section">
+            <div class="sidebar-label">Treasury</div>
+            <div class="yield-row"><span class="y-lbl">USYC position</span><span class="y-val y-amber">$4.2200</span></div>
+            <div class="yield-row"><span class="y-lbl">APY</span><span class="y-val y-sage">4.85%</span></div>
+            <div class="yield-row"><span class="y-lbl">Pending income</span><span class="y-val y-blue">+$0.020</span></div>
+            <div class="yield-row" style="border-top: 1px solid var(--border); margin-top: 4px; padding-top: 10px;"><span class="y-lbl">Today income</span><span class="y-val y-sage">+$0.240</span></div>
+            <div class="yield-row"><span class="y-lbl">Today expense</span><span class="y-val y-red">-$0.042</span></div>
+            <div class="yield-row"><span class="y-lbl">Today net</span><span class="y-val y-sage">+$0.198</span></div>
+          </div>
+          <div class="sidebar-form">
+            <div class="sf-label">Submit Task</div>
+            <div class="wallet-connected">
+              <span class="live-dot"></span>
+              <span class="w-addr">0x1234...abcd</span>
+              <span class="w-bal">$2.50</span>
+            </div>
+            <textarea class="sf-textarea" rows="4" placeholder="e.g., Summarize the USYC teller contract at 0x9fdF..."></textarea>
+            <select class="sf-select">
+              <option>Contract Summary — $0.020</option>
+              <option>Wallet Intelligence — $0.050</option>
+              <option>Watch Task — $0.030</option>
+              <option>General Research — $0.010</option>
+            </select>
+            <button class="sf-submit">Submit — $0.020 USDC</button>
+          </div>
+        </div>
+
+        <!-- Main content -->
+        <div class="main-content">
+
+          <!-- Trace -->
+          <div class="trace-pane">
+            <div class="pane-header">
+              <span class="pane-title">Execution Trace</span>
+              <span class="pane-status">
+                <span class="live-dot"></span>active
+              </span>
+            </div>
+            <div class="pane-body">
+              <div class="reason-block">
+                <div class="reason-head">Treasury Reasoning</div>
+                Balance $10.48 covers reserve $10.00 (+$0.48 buffer).
+                Incoming wallet_intelligence at $0.05 — est. cost $0.015, margin ~70%.
+                Queue depth 1. <span class="reason-decision">Decision: ACCEPT</span>
+                <span style="animation: glow 1s infinite; display:inline-block; color: var(--violet);">▌</span>
+              </div>
+
+              <div class="trace-row">
+                <span class="tr-icon" style="color:var(--sage);">↓</span>
+                <span class="tr-text">Payment received: +$0.0500 USDC</span>
+                <span class="tr-hash">0x4a2f↗</span>
+                <span class="tr-time">14:22:01</span>
+              </div>
+              <div class="trace-row">
+                <span class="tr-icon" style="color:var(--blue);">→</span>
+                <span class="tr-text">Arc RPC: eth_getTransactionCount(0x1234...)</span>
+                <span class="tr-time">14:22:02</span>
+              </div>
+              <div class="trace-row">
+                <span class="tr-icon" style="color:var(--blue);">→</span>
+                <span class="tr-text">Arc RPC: eth_getLogs — contract interactions</span>
+                <span class="tr-time">14:22:03</span>
+              </div>
+              <div class="trace-row">
+                <span class="tr-icon" style="color:var(--blue);">→</span>
+                <span class="tr-text">Arc RPC: Transfer events — USDC in/out</span>
+                <span class="tr-time">14:22:04</span>
+              </div>
+              <div class="trace-row">
+                <span class="tr-icon" style="color:var(--violet);">→</span>
+                <span class="tr-text">Claude: generating intelligence report...</span>
+                <span class="tr-time">14:22:05</span>
+              </div>
+              <div class="trace-row">
+                <span class="tr-icon" style="color:var(--sage);">✓</span>
+                <span class="tr-text" style="color:var(--sage);">Complete — net +$0.035 USDC</span>
+                <span class="tr-time">14:22:08</span>
+              </div>
+              <div class="trace-row" style="border:none;">
+                <span class="tr-icon" style="color:var(--amber);">◈</span>
+                <span class="tr-text" style="color:var(--text-3);">Sweep: $10.53 below $15.00 threshold — idle</span>
+                <span class="tr-time">14:22:09</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- History -->
+          <div class="history-pane">
+            <div class="pane-header" style="background:var(--bg);">
+              <span class="pane-title">Recent Tasks</span>
+              <span style="font-family:monospace;font-size:11px;color:var(--text-3);">247</span>
+            </div>
+            <div class="history-list">
+              <div class="h-item">
+                <div class="h-row1">
+                  <div class="h-status" style="background:var(--sage);"></div>
+                  <div class="h-text">Summarize USYC teller contract at 0x9fdF...</div>
+                </div>
+                <div class="h-row2">
+                  <span class="h-tag">contract_summary</span>
+                  <span class="h-income">+$0.020</span>
+                  <span class="h-cost">-$0.003</span>
+                  <span class="h-net" style="color:var(--sage);">=$0.017</span>
+                  <span class="h-date">today</span>
+                </div>
+              </div>
+              <div class="h-item">
+                <div class="h-row1">
+                  <div class="h-status" style="background:var(--sage);"></div>
+                  <div class="h-text">Wallet intelligence for 0xAbCd...</div>
+                </div>
+                <div class="h-row2">
+                  <span class="h-tag">wallet_intelligence</span>
+                  <span class="h-income">+$0.050</span>
+                  <span class="h-cost">-$0.015</span>
+                  <span class="h-net" style="color:var(--sage);">=$0.035</span>
+                  <span class="h-date">today</span>
+                </div>
+              </div>
+              <div class="h-item">
+                <div class="h-row1">
+                  <div class="h-status" style="background:var(--amber);"></div>
+                  <div class="h-text">Watch 0x7890... for inbound transfers</div>
+                </div>
+                <div class="h-row2">
+                  <span class="h-tag">watch_task</span>
+                  <span class="h-income">+$0.030</span>
+                  <span class="h-date">today</span>
+                </div>
+              </div>
+              <div class="h-item">
+                <div class="h-row1">
+                  <div class="h-status" style="background:var(--sage);"></div>
+                  <div class="h-text">Arc testnet block time query</div>
+                </div>
+                <div class="h-row2">
+                  <span class="h-tag">general</span>
+                  <span class="h-income">+$0.010</span>
+                  <span class="h-cost">-$0.008</span>
+                  <span class="h-net" style="color:var(--sage);">=$0.002</span>
+                  <span class="h-date">today</span>
+                </div>
+              </div>
+              <div class="h-item">
+                <div class="h-row1">
+                  <div class="h-status" style="background:var(--red);"></div>
+                  <div class="h-text">Monitor USYC oracle for deviations</div>
+                </div>
+                <div class="h-row2">
+                  <span class="h-tag">watch_task</span>
+                  <span class="h-income">+$0.030</span>
+                  <span class="h-net" style="color:var(--red);">REJECTED</span>
+                  <span class="h-date">yesterday</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <span>solv-001 · Arc Testnet · Circle 4-tool stack · 2026</span>
+    <div>
+      <a href="#">GitHub</a>
+      <a href="#">Arc Explorer</a>
+      <a href="#">Circle Docs</a>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>

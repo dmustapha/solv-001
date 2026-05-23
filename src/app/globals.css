@@ -4,33 +4,145 @@
 
 @layer base {
   :root {
-    --bg:        #07090C;
-    --surface:   #0D1016;
-    --surface-2: #111620;
-    --border:    #18202E;
-    --accent:    #00C8FF;
-    --gold:      #E09820;
-    --green:     #16C97A;
-    --red:       #F04858;
-    --blue:      #4B8BF0;
-    --purple:    #9060E8;
-    --text-1:    #D6E0EC;
-    --text-2:    #60788A;
-    --text-3:    #283040;
+    /* ─── Terminal Ledger Palette ────────────────────────────────── */
+    --bg:        #03050A;
+    --surf:      #070C14;
+    --surf-2:    #0C1220;
+    --wire:      #141E2E;
+    --wire-2:    #1E2C40;
+
+    --amber:     #E8A010;
+    --amber-dim: #9A6A08;
+
+    --green:     #00C880;
+    --red:       #E8404C;
+    --blue:      #3A72DC;
+    --violet:    #7048D8;
+
+    /* text-2 brightened from #485868 — readable on near-black */
+    --text-1:    #CDD8E8;
+    --text-2:    #7A8CA0;
+    --text-3:    #38485A;
   }
 
   html, body {
     background-color: var(--bg);
     color: var(--text-1);
+    font-feature-settings: "ss01", "ss02", "cv01";
   }
 
-  ::-webkit-scrollbar              { width: 3px; height: 3px; }
-  ::-webkit-scrollbar-track        { background: var(--surface); }
-  ::-webkit-scrollbar-thumb        { background: var(--border); border-radius: 2px; }
-  ::-webkit-scrollbar-thumb:hover  { background: #263040; }
+  /* Thin scrollbars */
+  ::-webkit-scrollbar              { width: 2px; height: 2px; }
+  ::-webkit-scrollbar-track        { background: var(--surf); }
+  ::-webkit-scrollbar-thumb        { background: var(--wire-2); border-radius: 1px; }
+  ::-webkit-scrollbar-thumb:hover  { background: #2A3C54; }
 }
 
 @layer utilities {
-  .font-mono       { font-family: var(--font-mono), monospace; }
-  .scrollbar-thin  { scrollbar-width: thin; scrollbar-color: var(--border) var(--surface); }
+  .font-mono      { font-family: var(--font-mono), monospace; }
+  .scrollbar-thin { scrollbar-width: thin; scrollbar-color: var(--wire-2) var(--surf); }
+
+  /* Panel card — shared base */
+  .panel {
+    background:   var(--surf);
+    border:       1px solid var(--wire);
+    border-radius: 2px;
+  }
+
+  /* Panel header row */
+  .panel-header {
+    padding:       10px 16px;
+    border-bottom: 1px solid var(--wire);
+    display:       flex;
+    align-items:   center;
+    justify-content: space-between;
+    flex-shrink:   0;
+  }
+
+  /* Label style: 10px mono ALL-CAPS */
+  .label {
+    font-size:      10px;
+    font-family:    var(--font-mono), monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color:          var(--text-2);
+  }
+
+  /* Amber accent line */
+  .accent-line {
+    height:     1px;
+    background: linear-gradient(90deg, var(--amber) 0%, transparent 100%);
+    opacity:    0.4;
+  }
+
+  /* Scanline overlay */
+  .scanline-overlay::after {
+    content:    "";
+    position:   fixed;
+    inset:      0;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.03) 2px,
+      rgba(0, 0, 0, 0.03) 4px
+    );
+    z-index: 9999;
+  }
+
+  /* Ticker wrapper */
+  .ticker-track {
+    display:    flex;
+    width:      max-content;
+    animation:  ticker 32s linear infinite;
+    will-change: transform;
+  }
+
+  /* Stagger animation helpers */
+  .anim-delay-1 { animation-delay: 0.1s; }
+  .anim-delay-2 { animation-delay: 0.2s; }
+  .anim-delay-3 { animation-delay: 0.35s; }
+  .anim-delay-4 { animation-delay: 0.5s; }
+  .anim-delay-5 { animation-delay: 0.65s; }
+  .anim-delay-6 { animation-delay: 0.8s; }
+  .anim-delay-7 { animation-delay: 0.95s; }
+  .anim-delay-8 { animation-delay: 1.1s; }
+
+  /* Flow card code block */
+  .code-block {
+    background:    var(--bg);
+    border:        1px solid var(--wire);
+    border-radius: 2px;
+    padding:       12px 14px;
+    font-family:   var(--font-mono), monospace;
+    font-size:     11px;
+    line-height:   1.7;
+    color:         var(--text-2);
+    overflow-x:    auto;
+  }
+
+  /* Amber underline for hero words */
+  .amber-underline {
+    text-decoration-color: var(--amber);
+    text-underline-offset: 4px;
+  }
+
+  /* Glowing amber border on active element */
+  .amber-glow-border {
+    border-color: var(--amber);
+    box-shadow:   0 0 0 1px rgba(232, 160, 16, 0.15), 0 0 20px rgba(232, 160, 16, 0.06);
+  }
+
+  /* Subtle horizontal grid line */
+  .h-rule {
+    height:     1px;
+    background: var(--wire);
+    width:      100%;
+  }
+}
+
+/* Ticker pause on hover */
+.ticker-wrap:hover .ticker-track {
+  animation-play-state: paused;
 }

@@ -21,6 +21,9 @@ export default function SolvLogo({ size = 20, color = "var(--amber)", className 
     `${cx - r},${cy}`,
   ].join(" ");
 
+  // crispEdges keeps diagonal lines pixel-sharp at small favicon sizes
+  const shapeRendering = s < 24 ? "crispEdges" : "geometricPrecision";
+
   return (
     <svg
       width={s}
@@ -30,6 +33,7 @@ export default function SolvLogo({ size = 20, color = "var(--amber)", className 
       xmlns="http://www.w3.org/2000/svg"
       className={className}
       aria-hidden="true"
+      shapeRendering={shapeRendering}
     >
       {/* Outer diamond */}
       <polygon

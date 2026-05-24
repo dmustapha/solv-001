@@ -4,10 +4,10 @@ import { useState } from "react";
 import { createWalletClient, custom, parseUnits } from "viem";
 import { Brain, Shield, FileText, Coins, Clock, Eye, BarChart2, Lightbulb } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { ARC_CHAIN_ID, TASK_LABELS } from "@/lib/constants";
 import { TASK_PRICING } from "@/types";
 import type { TaskType, EIP3009Auth } from "@/types";
 
-const ARC_CHAIN_ID   = 5042002;
 const GATEWAY_WALLET = "0x0077777d7EBA4688BDeF3E311b846F25870A19B9" as const;
 
 interface Props {
@@ -29,16 +29,6 @@ function getEth(): EthProvider | null {
   return (window as unknown as { ethereum?: EthProvider }).ethereum ?? null;
 }
 
-const TASK_LABELS: Record<TaskType, string> = {
-  wallet_intelligence:    "Wallet Intelligence",
-  counterparty_vet:       "Counterparty Vetting",
-  contract_summary:       "Contract Summary",
-  conditional_payment:    "Conditional Payment",
-  scheduled_disbursement: "Scheduled Disbursement",
-  wallet_watch:           "Wallet Watch",
-  contract_watch:         "Contract Watch",
-  general:                "General Analysis",
-};
 
 const TASK_DESCRIPTIONS: Record<TaskType, string> = {
   wallet_intelligence:    "Full cross-chain activity profile for any address",
@@ -208,11 +198,10 @@ export default function TaskSubmitForm({
                 disabled={!canSubmit}
                 className="border p-4 text-left flex flex-col gap-2 card-interactive rounded disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{
-                  background:  "var(--surf)",
                   borderColor: "var(--wire)",
                   borderLeft:  `3px solid ${accent}`,
                   minHeight:   "100px",
-                  borderRadius: "6px",
+                  borderRadius: "4px",
                 }}
               >
                 <div className="flex items-start justify-between gap-1">
@@ -272,7 +261,7 @@ export default function TaskSubmitForm({
         <div
           className="relative border-2 transition-all"
           style={{
-            borderRadius:  "12px",
+            borderRadius:  "8px",
             borderColor:   focused ? accent : "var(--wire)",
             background:    "var(--surf-2)",
             boxShadow:     focused ? "var(--shadow-amber)" : "none",

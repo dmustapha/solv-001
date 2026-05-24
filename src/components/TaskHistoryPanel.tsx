@@ -1,6 +1,8 @@
 "use client";
 
 import { isArcTxHash } from "@/lib/utils";
+import { isJsonBlob } from "@/lib/format";
+import { ARC_EXPLORER_URL, TASK_LABELS } from "@/lib/constants";
 import SolvLogo from "@/components/SolvLogo";
 import type { Task, TaskType } from "@/types";
 
@@ -36,20 +38,6 @@ function getStatusDisplay(task: Task): { label: string; color: string } {
   };
 }
 
-function isJsonBlob(s: string): boolean {
-  try { JSON.parse(s); return true; } catch { return false; }
-}
-
-const TASK_LABELS: Record<string, string> = {
-  wallet_intelligence:    "Wallet Intelligence",
-  counterparty_vet:       "Counterparty Vetting",
-  contract_summary:       "Contract Summary",
-  conditional_payment:    "Conditional Payment",
-  scheduled_disbursement: "Scheduled Disbursement",
-  wallet_watch:           "Wallet Watch",
-  contract_watch:         "Contract Watch",
-  general:                "General Analysis",
-};
 
 export default function TaskHistoryPanel({ tasks, walletAddress, onTaskClick, globalView = false }: Props) {
   return (
@@ -75,12 +63,16 @@ export default function TaskHistoryPanel({ tasks, walletAddress, onTaskClick, gl
           </div>
         )}
 
-        {walletAddress && tasks.length === 0 && (
+        {(walletAddress || globalView) && tasks.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full gap-3 py-12 text-center">
             <SolvLogo size={32} color="var(--wire-2)" />
-            <div className="text-[12px]" style={{ color: "var(--text-3)" }}>No tasks yet</div>
+            <div className="text-[12px]" style={{ color: "var(--text-3)" }}>
+              {globalView ? "No tasks recorded yet" : "No tasks yet"}
+            </div>
             <div className="text-[10px]" style={{ color: "var(--text-3)" }}>
-              Submit your first task to get started
+              {globalView
+                ? "Tasks appear here as the agent completes them"
+                : "Submit your first task to get started"}
             </div>
           </div>
         )}
@@ -96,7 +88,6 @@ export default function TaskHistoryPanel({ tasks, walletAddress, onTaskClick, gl
 function TaskRow({ task, index, onClick }: { task: Task; index: number; onClick?: () => void }) {
   const { label: statusLbl, color: dotColor } = getStatusDisplay(task);
   const typeLabel = TASK_LABELS[task.task_type] ?? task.task_type.replace(/_/g, " ");
-  const arcUrl    = process.env.NEXT_PUBLIC_ARC_EXPLORER_URL ?? "https://explorer.arcnetwork.xyz";
 
   // Snippet: prefer result, fall back to non-JSON reasoning
   const snippet = task.result
@@ -110,7 +101,7 @@ function TaskRow({ task, index, onClick }: { task: Task; index: number; onClick?
       className={`px-4 py-3 border-b animate-fade-up opacity-0${onClick ? " card-interactive" : ""}`}
       style={{
         borderColor:       "var(--wire)",
-        animationDelay:    `${Math.min(index * 40, 320)}ms`,
+        animationDelay:    `${Math.min(index * 40, 480)}ms`,
         animationFillMode: "both",
       }}
       onClick={onClick}
@@ -155,7 +146,7 @@ function TaskRow({ task, index, onClick }: { task: Task; index: number; onClick?
         <div className="flex items-center gap-3 mt-2 ml-4" onClick={e => e.stopPropagation()}>
           {isArcTxHash(task.income_tx_hash) && (
             <a
-              href={`${arcUrl}/tx/${task.income_tx_hash}`}
+              href={`${ARC_EXPLORER_URL}/tx/${task.income_tx_hash}`}
               target="_blank" rel="noopener noreferrer"
               className="text-[10px] font-mono transition-colors"
               style={{ color: "var(--green)" }}
@@ -168,7 +159,7 @@ function TaskRow({ task, index, onClick }: { task: Task; index: number; onClick?
           {task.expense_tx_hashes.filter(isArcTxHash).slice(0, 2).map((hash) => (
             <a
               key={hash}
-              href={`${arcUrl}/tx/${hash}`}
+              href={`${ARC_EXPLORER_URL}/tx/${hash}`}
               target="_blank" rel="noopener noreferrer"
               className="text-[10px] font-mono transition-colors"
               style={{ color: "var(--amber)" }}

@@ -1,5 +1,6 @@
 "use client";
 
+import { ARC_EXPLORER_URL } from "@/lib/constants";
 import type { TreasuryState } from "@/types";
 
 interface Props { treasury: TreasuryState | null; }
@@ -117,7 +118,7 @@ export default function TreasuryPanel({ treasury }: Props) {
 
           {/* Arc Explorer link */}
           <a
-            href={`${process.env.NEXT_PUBLIC_ARC_EXPLORER_URL ?? "https://explorer.arcnetwork.xyz"}/address/${process.env.NEXT_PUBLIC_AGENT_WALLET_ADDRESS ?? "0x927c1d756d12879aebea0772f3ee220f21f4841a"}`}
+            href={`${ARC_EXPLORER_URL}/address/${process.env.NEXT_PUBLIC_AGENT_WALLET_ADDRESS ?? "0x927c1d756d12879aebea0772f3ee220f21f4841a"}`}
             target="_blank"
             rel="noopener noreferrer"
             className="mt-4 pt-3 border-t text-[10px] font-mono flex items-center gap-1 link-hover link-hover-blue"

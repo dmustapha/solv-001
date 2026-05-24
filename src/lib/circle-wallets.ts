@@ -76,13 +76,14 @@ export async function transferUSDC(params: {
 }): Promise<string> {
   const client      = getClient();
   const walletId    = process.env.CIRCLE_WALLET_ID!;
-  const amountUnits = (params.amountUsdc * 1_000_000).toFixed(0);  // 6 decimals
+  // Circle Dev-Controlled Wallets API uses decimal notation (e.g. "5" = 5 USDC, not atomic units)
+  const amountDecimal = params.amountUsdc.toFixed(6);
 
   const response = await client.createTransaction({
     walletId,
-    tokenId:            process.env.CIRCLE_USDC_TOKEN_ID ?? "",  // set CIRCLE_USDC_TOKEN_ID in env
+    tokenId:            process.env.CIRCLE_USDC_TOKEN_ID ?? "",
     destinationAddress: params.toAddress,
-    amount:             [amountUnits],
+    amount:             [amountDecimal],
     fee: { type: "level" as const, config: { feeLevel: "MEDIUM" as const } },
   });
 

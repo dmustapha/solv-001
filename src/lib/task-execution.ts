@@ -1,7 +1,7 @@
 import { getTransactionCount, getNativeBalance, getCode, getLogs, checkChainLive,
          arcExplorerTxUrl, ethCall } from "./arc-canteen";
 import { executeContractCall, waitForTransactionHash, getAgentWalletBalance } from "./circle-wallets";
-import { insertTraceEvent, insertTreasuryEvent, completeTask, deferTask, rejectTask } from "./db";
+import { insertTraceEvent, insertTreasuryEvent, completeTask, deferTask, rejectTask, setTaskResult } from "./db";
 import { getUSYCPosition } from "./usyc";
 import type { Task, TraceEvent, SSEEvent } from "@/types";
 import Anthropic from "@anthropic-ai/sdk";
@@ -410,9 +410,10 @@ async function executePayment(
     if (dateMatch) {
       const scheduledDate = new Date(dateMatch[1]);
       if (scheduledDate > new Date()) {
-        const state = JSON.stringify({ scheduled_date: dateMatch[1], to_address: toAddress, amount });
-        await deferTask(task.id, state);
+        const state  = JSON.stringify({ scheduled_date: dateMatch[1], to_address: toAddress, amount });
         const result = `Scheduled for ${dateMatch[1]}. Daily check active — payment will execute on or after that date.`;
+        await setTaskResult(task.id, result);
+        await deferTask(task.id, state);
         await emitAndRecord(task.id, { task_id: task.id, type: "result", description: result, timestamp: new Date() }, sendTrace);
         return { result, cost_usdc: DATA_COST, expense_tx_hashes: [] };
       }
@@ -556,11 +557,11 @@ async function executeWatchTask(
   }, sendTrace);
 
   // Store baseline state for daily cron checker
-  const state = JSON.stringify({ baseline_tx_count: txCount, address });
-  await deferTask(task.id, state);
-
+  const state  = JSON.stringify({ baseline_tx_count: txCount, address });
   const label  = task.task_type === "wallet_watch" ? "wallet" : "contract";
   const result = `Monitoring ${label} ${address}. Baseline: ${txCount} transactions on Arc testnet. Checked daily — new activity will trigger an alert.`;
+  await setTaskResult(task.id, result);
+  await deferTask(task.id, state);
 
   await emitAndRecord(task.id, {
     task_id:     task.id,

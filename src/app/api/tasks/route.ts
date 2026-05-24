@@ -2,7 +2,7 @@ import { NextRequest }        from "next/server";
 
 export const maxDuration = 60; // seconds — signal to Vercel; upgrade to Pro for 300s
 import { randomUUID }         from "crypto";
-import { insertTask, listTasks, updateTaskStatus, completeTask, deferTask, rejectTask,
+import { insertTask, listTasks, listTasksByWallet, updateTaskStatus, completeTask, deferTask, rejectTask,
          failTask, getTask, insertTreasuryEvent, getAllTimeStats, getActiveTaskCount,
          cleanupZombieTasks }  from "@/lib/db";
 import { build402Response, verifyNanopayment }  from "@/lib/nanopayments-seller";
@@ -16,9 +16,10 @@ import { TASK_PRICING, OPERATING_RESERVE_USDC } from "@/types";
 
 // ─── GET /api/tasks ───────────────────────────────────────────────────────────
 
-export async function GET(): Promise<Response> {
+export async function GET(req: NextRequest): Promise<Response> {
   await cleanupZombieTasks();
-  const tasks = await listTasks(50);
+  const wallet = req.nextUrl.searchParams.get("wallet");
+  const tasks  = wallet ? await listTasksByWallet(wallet, 50) : await listTasks(50);
   return Response.json(tasks);
 }
 

@@ -13,8 +13,8 @@ async function main() {
   const before = await gwClient.getBalances();
   console.log('Before:', JSON.stringify(before, (_k, v) => typeof v === 'bigint' ? v.toString() : v, 2));
 
-  console.log('\nDepositing 10 USDC into GatewayClient...');
-  await gwClient.deposit('10');
+  console.log('\nDepositing 15 USDC into GatewayClient...');
+  await gwClient.deposit('15');
   console.log('✓ Deposit successful');
 
   const after = await gwClient.getBalances();

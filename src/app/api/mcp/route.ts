@@ -47,7 +47,7 @@ const tools = [
 
 function createMcpServer(): Server {
   const server = new Server(
-    { name: "agent-treasury", version: "1.0.0" },
+    { name: "solv-001", version: "1.0.0" },
     { capabilities: { tools: {} } },
   );
 

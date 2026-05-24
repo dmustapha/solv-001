@@ -2,15 +2,15 @@
 
 import { useEffect, useRef } from "react";
 import { isArcTxHash } from "@/lib/utils";
+import { ARC_EXPLORER_URL } from "@/lib/constants";
 import TaskProgressBar from "./TaskProgressBar";
-import type { TraceEvent, Task, ReasoningDecision } from "@/types";
+import type { TraceEvent, ReasoningDecision } from "@/types";
 
 interface Props {
-  traceEvents:       TraceEvent[];
-  reasoning:         string;
+  traceEvents:        TraceEvent[];
+  reasoning:          string;
   reasoningDecision?: ReasoningDecision | null;
-  isActive:          boolean;
-  activeTask:        Task | null;
+  isActive:           boolean;
 }
 
 const TRACE_ICONS: Record<string, string> = {
@@ -35,7 +35,7 @@ const DECISION_STYLES: Record<string, { color: string; border: string; bg: strin
   REJECT: { color: "var(--red)",    border: "rgba(255,68,68,0.3)",  bg: "rgba(255,68,68,0.06)" },
 };
 
-export default function TaskTracePanel({ traceEvents, reasoning, reasoningDecision, isActive, activeTask: _activeTask }: Props) {
+export default function TaskTracePanel({ traceEvents, reasoning, reasoningDecision, isActive }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -98,7 +98,7 @@ export default function TaskTracePanel({ traceEvents, reasoning, reasoningDecisi
               className="text-[10px] uppercase tracking-widest mb-2"
               style={{ color: "var(--violet)" }}
             >
-              Treasury Reasoning
+              Agent Reasoning
             </div>
             <div
               className="leading-relaxed whitespace-pre-wrap p-3 text-[11px] border"
@@ -150,14 +150,13 @@ export default function TaskTracePanel({ traceEvents, reasoning, reasoningDecisi
 function TraceRow({ event, index }: { event: TraceEvent; index: number }) {
   const icon   = TRACE_ICONS[event.type]  ?? "·";
   const color  = TRACE_COLORS[event.type] ?? "var(--text-2)";
-  const arcUrl = process.env.NEXT_PUBLIC_ARC_EXPLORER_URL ?? "https://explorer.arcnetwork.xyz";
   const hashOk = isArcTxHash(event.arc_tx_hash);
 
   return (
     <div
-      className="flex items-start gap-2.5 py-0.5 group animate-slide-left opacity-0"
+      className="flex items-start gap-2.5 py-0.5 animate-slide-left opacity-0"
       style={{
-        animationDelay:    `${Math.min(index * 60, 400)}ms`,
+        animationDelay:    `${Math.min(index * 50, 600)}ms`,
         animationFillMode: "both",
       }}
     >
@@ -169,13 +168,10 @@ function TraceRow({ event, index }: { event: TraceEvent; index: number }) {
             [{event.cost_usdc.toFixed(3)} USDC
             {hashOk && (
               <a
-                href={`${arcUrl}/tx/${event.arc_tx_hash}`}
+                href={`${ARC_EXPLORER_URL}/tx/${event.arc_tx_hash}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="ml-1 transition-colors"
-                style={{ color: "var(--blue)" }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--amber)"; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--blue)"; }}
+                className="ml-1 trace-hash text-[10px] font-mono"
               >
                 {event.arc_tx_hash!.slice(0, 8)}↗
               </a>
@@ -185,24 +181,17 @@ function TraceRow({ event, index }: { event: TraceEvent; index: number }) {
         )}
         {!event.cost_usdc && hashOk && (
           <a
-            href={`${arcUrl}/tx/${event.arc_tx_hash}`}
+            href={`${ARC_EXPLORER_URL}/tx/${event.arc_tx_hash}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="ml-2 text-[10px] transition-colors"
+            className="ml-2 text-[10px] font-mono link-hover"
             style={{ color: "var(--text-3)" }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--blue)"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-3)"; }}
           >
             [{event.arc_tx_hash!.slice(0, 8)}↗]
           </a>
         )}
       </div>
-      <span
-        className="shrink-0 text-[10px] transition-colors"
-        style={{ color: "var(--text-3)" }}
-        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-2)"; }}
-        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-3)"; }}
-      >
+      <span className="shrink-0 text-[10px] trace-ts">
         {new Date(event.timestamp).toLocaleTimeString()}
       </span>
     </div>

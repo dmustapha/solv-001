@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useInView, useCountUp } from "@/hooks/animations";
+import { TASK_LABELS } from "@/lib/constants";
 import { TASK_PRICING } from "@/types";
 import SolvLogo from "@/components/SolvLogo";
 
@@ -17,7 +18,7 @@ const TICKER_ITEMS = [
   { label: "RUNTIME", value: "24/7 Autonomous" },
   { label: "SETTLEMENT", value: "On-Chain" },
   { label: "CURRENCY", value: "USDC" },
-  { label: "CHAIN ID", value: "26 — ARC" },
+  { label: "CHAIN ID", value: "5042002 — ARC" },
 ];
 
 /* ─── Flow cards ─────────────────────────────────────────────────────────── */
@@ -72,16 +73,6 @@ if balance > operating_reserve * 1.5:
 ];
 
 /* ─── Pricing rows ───────────────────────────────────────────────────────── */
-const TASK_LABELS: Record<string, string> = {
-  wallet_intelligence:    "Wallet Intelligence",
-  counterparty_vet:       "Counterparty Vetting",
-  contract_summary:       "Contract Summary",
-  conditional_payment:    "Conditional Payment",
-  scheduled_disbursement: "Scheduled Disbursement",
-  wallet_watch:           "Wallet Watch",
-  contract_watch:         "Contract Watch",
-  general:                "General Analysis",
-};
 
 /* ─── Stat box ───────────────────────────────────────────────────────────── */
 function StatBox({
@@ -159,9 +150,6 @@ function PricingRow({
       <div className="flex flex-col gap-0.5">
         <span className="text-[13px] font-mono" style={{ color: "var(--text-1)" }}>
           {TASK_LABELS[taskType]}
-        </span>
-        <span className="text-[11px] font-mono" style={{ color: "var(--text-3)" }}>
-          {taskType}
         </span>
       </div>
       <div className="flex items-center gap-6">
@@ -282,7 +270,7 @@ export default function LandingPage() {
         {/* Dot grid background */}
         <div
           className="dot-grid pointer-events-none absolute inset-0 -z-10"
-          style={{ opacity: 0.35, maskImage: "radial-gradient(ellipse 80% 80% at 50% 0%, black 40%, transparent 100%)" }}
+          style={{ opacity: 0.55, maskImage: "radial-gradient(ellipse 90% 70% at 50% 0%, black 50%, transparent 100%)" }}
         />
         <div
           className="text-[11px] font-mono uppercase tracking-widest mb-6 animate-fade-up opacity-0 anim-delay-1"
@@ -316,7 +304,7 @@ export default function LandingPage() {
           className="text-[16px] leading-relaxed max-w-xl animate-fade-up opacity-0 anim-delay-5"
           style={{ color: "var(--text-2)", animationFillMode: "both" }}
         >
-          solv-001 is a production AI agent that accepts tasks for USDC, pays its
+          SOLV-001 is a production AI agent that accepts tasks for USDC, pays its
           own expenses via x402 micropayments, and sweeps idle capital into Hashnote
           USYC yield — all on-chain, all autonomous.
         </p>

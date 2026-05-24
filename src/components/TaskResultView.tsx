@@ -1,15 +1,12 @@
 "use client";
 
+import { isJsonBlob } from "@/lib/format";
 import type { TaskType } from "@/types";
 
 interface Props {
   result:    string | null;
   reasoning: string | null;
   task_type: TaskType | null;
-}
-
-function isJsonBlob(s: string): boolean {
-  try { JSON.parse(s); return true; } catch { return false; }
 }
 
 // Detect numbered sections like "1. WALLET OVERVIEW:" or "1. Overview:"

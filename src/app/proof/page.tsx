@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { CheckCircle2 } from "lucide-react";
+import Link from "next/link";
+import { CheckCircle2, Clock } from "lucide-react";
 import AppNav from "@/components/AppNav";
 import { listTasks, getAllTimeStats } from "@/lib/db";
 import { getAgentWallet }            from "@/lib/circle-wallets";
@@ -72,7 +73,9 @@ export default async function ProofPage() {
         <section className="panel">
           <div className="panel-header">
             <span className="label flex items-center gap-1.5">
-              <CheckCircle2 size={12} style={{ color: "var(--green)" }} aria-hidden />
+              {usycPosition.usdc_value > 0
+                ? <CheckCircle2 size={12} style={{ color: "var(--green)" }} aria-hidden />
+                : <Clock size={12} style={{ color: "var(--amber)" }} aria-hidden />}
               USYC — Idle Capital Yield
             </span>
           </div>
@@ -188,6 +191,27 @@ export default async function ProofPage() {
             <SummaryRow label="Expense payments"   value={`${allExpenseTx.length} logged on Arc testnet`} valueColor="var(--amber)" />
             <SummaryRow label="USYC APY"           value={`${(usycPosition.apy * 100).toFixed(2)}% — live from Teller contract`} valueColor="var(--green)" />
             <SummaryRow label="Claude reasoning"   value="Logged per task, streamed via SSE" />
+          </div>
+        </section>
+
+        {/* ── CTA ── */}
+        <section className="panel">
+          <div className="px-4 py-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-[14px] font-semibold mb-0.5" style={{ color: "var(--text-1)" }}>
+                Ready to run a task?
+              </p>
+              <p className="text-[12px]" style={{ color: "var(--text-2)" }}>
+                Pay per task, no subscription. Income settles on Arc testnet.
+              </p>
+            </div>
+            <Link
+              href="/dashboard"
+              className="btn-amber px-5 py-2 text-[13px] font-semibold shrink-0"
+              style={{ borderRadius: "6px" }}
+            >
+              Open Dashboard →
+            </Link>
           </div>
         </section>
 

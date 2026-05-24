@@ -6,10 +6,10 @@
   :root {
     /* ─── Terminal Ledger Palette ────────────────────────────────── */
     --bg:        #03050A;
-    --surf:      #070C14;
-    --surf-2:    #0C1220;
-    --wire:      #141E2E;
-    --wire-2:    #1E2C40;
+    --surf:      #07090E;
+    --surf-2:    #0C0F18;
+    --wire:      #141820;
+    --wire-2:    #1C2230;
 
     --amber:     #E8A010;
     --amber-dim: #9A6A08;
@@ -52,6 +52,7 @@
     background:   var(--surf);
     border:       1px solid var(--wire);
     border-radius: 4px;
+    box-shadow:   var(--shadow-panel);
   }
 
   /* Panel header row */
@@ -202,6 +203,7 @@
 .btn-ghost:hover { color: var(--text-1); }
 
 .card-interactive {
+  background: var(--surf);
   transition: background 120ms ease, border-color 120ms ease;
   cursor: pointer;
 }
@@ -212,6 +214,30 @@
 }
 .link-hover:hover { color: var(--text-1); }
 .link-hover-blue:hover { color: var(--blue); }
+
+/* Wire-border button — for "New Task", "Close", and secondary actions */
+.btn-wire {
+  color: var(--text-2);
+  border: 1px solid var(--wire);
+  background: transparent;
+  cursor: pointer;
+  transition: color 150ms ease, border-color 150ms ease;
+}
+.btn-wire:hover { color: var(--text-1); border-color: var(--wire-2); }
+
+/* Trace row timestamp — subtle reveal on hover */
+.trace-ts {
+  color: var(--text-3);
+  transition: color 150ms ease;
+}
+.trace-ts:hover { color: var(--text-2); }
+
+/* Trace hash link — blue baseline, amber on hover */
+.trace-hash {
+  color: var(--blue);
+  transition: color 150ms ease;
+}
+.trace-hash:hover { color: var(--amber); }
 
 /* ─── Skeleton loading shimmer ───────────────────────────────────── */
 @keyframes skeletonShimmer {
@@ -226,7 +252,7 @@
     var(--surf) 100%
   );
   background-size: 200% 100%;
-  animation: skeletonShimmer 1.8s ease-in-out infinite;
+  animation: skeletonShimmer 1.8s linear infinite;
   border-radius: 3px;
 }
 
@@ -259,7 +285,7 @@
   height: 100%;
   background: linear-gradient(90deg, var(--amber-dim), var(--amber));
   border-radius: 1px;
-  transition: width 600ms cubic-bezier(0.22,1,0.36,1);
+  transition: width 500ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 /* ─── Toast notification system ──────────────────────────────────── */
@@ -291,4 +317,18 @@
 .toast.toast-success { border-left-color: var(--green); }
 .toast.toast-exit {
   animation: slideOutRight 250ms ease forwards;
+}
+
+/* ─── Reduced motion ─────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up   { animation: none !important; opacity: 1 !important; }
+  .animate-slide-left { animation: none !important; opacity: 1 !important; }
+  .ticker-track      { animation: none !important; }
+  .skeleton          { animation: none !important; background: var(--surf-2); }
+  .animate-scanline  { animation: none !important; }
+  .animate-pulse-dot { animation: none !important; }
+  .progress-fill     { transition: none !important; }
+  .toast             { animation: none !important; }
+  .animate-blink     { animation: none !important; }
+  .cursor-blink::after { animation: none !important; }
 }

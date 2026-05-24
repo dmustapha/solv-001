@@ -6,6 +6,7 @@ import TaskSubmitForm  from "./TaskSubmitForm";
 import TaskHistoryPanel from "./TaskHistoryPanel";
 import TaskTracePanel  from "./TaskTracePanel";
 import TaskResultView  from "./TaskResultView";
+import { ARC_CHAIN_ID, ARC_CHAIN_HEX, ARC_EXPLORER_URL } from "@/lib/constants";
 import type { Task, TraceEvent, SSEEvent, ReasoningDecision, TaskType } from "@/types";
 
 type UIState = "idle" | "composing" | "loading" | "complete" | "terminal" | "error";
@@ -21,10 +22,8 @@ function getEth(): EthProvider | null {
   return (window as unknown as { ethereum?: EthProvider }).ethereum ?? null;
 }
 
-const WALLET_KEY    = "solv001_wallet";
-const CHAIN_KEY     = "solv001_chainId";
-const ARC_CHAIN_ID  = 5042002;
-const ARC_CHAIN_HEX = "0x4cef52";
+const WALLET_KEY = "solv001_wallet";
+const CHAIN_KEY  = "solv001_chainId";
 
 export default function Dashboard() {
   const [uiState,           setUiState]           = useState<UIState>("idle");
@@ -375,7 +374,6 @@ export default function Dashboard() {
               reasoning={reasoning}
               reasoningDecision={reasoningDecision}
               isActive={true}
-              activeTask={null}
             />
           ) : uiState === "complete" ? (
             <div className="panel flex-1 flex flex-col">
@@ -440,10 +438,7 @@ function NewTaskBtn({ onClick, label = "New Task" }: { onClick: () => void; labe
   return (
     <button
       onClick={onClick}
-      className="text-[12px] font-medium px-3 py-1.5 border transition-colors"
-      style={{ borderColor: "var(--wire)", color: "var(--text-2)" }}
-      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-1)"; }}
-      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-2)"; }}
+      className="btn-wire text-[12px] font-medium px-3 py-1.5"
     >
       {label}
     </button>
@@ -459,8 +454,6 @@ function ViewingOverlay({
   task: Task & { trace: TraceEvent[] };
   onClose: () => void;
 }) {
-  const arcUrl = process.env.NEXT_PUBLIC_ARC_EXPLORER_URL ?? "https://explorer.arcnetwork.xyz";
-
   return (
     <div className="panel flex-1 flex flex-col">
       <div className="panel-header">
@@ -475,10 +468,7 @@ function ViewingOverlay({
         </div>
         <button
           onClick={onClose}
-          className="text-[12px] font-medium px-3 py-1.5 border transition-colors shrink-0"
-          style={{ borderColor: "var(--wire)", color: "var(--text-2)" }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-1)"; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-2)"; }}
+          className="btn-wire text-[12px] font-medium px-3 py-1.5 shrink-0"
         >
           Close
         </button>
@@ -499,7 +489,7 @@ function ViewingOverlay({
                   <span style={{ color: "var(--text-2)" }}>{event.description}</span>
                   {event.arc_tx_hash && (
                     <a
-                      href={`${arcUrl}/tx/${event.arc_tx_hash}`}
+                      href={`${ARC_EXPLORER_URL}/tx/${event.arc_tx_hash}`}
                       target="_blank" rel="noopener noreferrer"
                       className="ml-auto shrink-0 text-[10px] transition-opacity hover:opacity-70"
                       style={{ color: "var(--blue)" }}

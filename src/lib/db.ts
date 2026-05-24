@@ -104,6 +104,13 @@ export async function rejectTask(id: string, reasoning: string): Promise<void> {
   await sql`UPDATE tasks SET status = 'rejected', reasoning = ${reasoning} WHERE id = ${id}`;
 }
 
+export async function getDeferredTasks(): Promise<Task[]> {
+  const result = await sql`
+    SELECT * FROM tasks WHERE status = 'deferred' ORDER BY created_at ASC
+  `;
+  return result.rows.map(rowToTask);
+}
+
 export async function failTask(id: string, reasoning: string): Promise<void> {
   await sql`UPDATE tasks SET status = 'failed', reasoning = ${reasoning} WHERE id = ${id}`;
 }

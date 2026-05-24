@@ -38,16 +38,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     return Response.json({ error: "task, task_type, and payer_wallet are required" }, { status: 400 });
   }
 
-  // Rate limit: 5 task submissions per payer wallet per minute
-  pruneExpiredEntries();
-  const rl = checkRateLimit(`tasks:${payer_wallet}`, { limit: 5, windowMs: 60_000 });
-  if (!rl.allowed) {
-    return Response.json(
-      { error: "Rate limit exceeded. Max 5 tasks per minute per wallet." },
-      { status: 429, headers: { "Retry-After": String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } },
-    );
-  }
-
+  // Validation before rate limit — invalid inputs don't consume quota
   if (task.length > 2000) {
     return Response.json({ error: "task must be 2000 characters or fewer" }, { status: 400 });
   }
@@ -82,6 +73,26 @@ export async function POST(req: NextRequest): Promise<Response> {
 
   if (!payment_authorization) {
     return build402Response({ price_usdc: pricing.price_usdc, task_type, requestUrl: req.url });
+  }
+
+  // Validate payment amount before hitting rate limit
+  const requiredUnits = BigInt(Math.round(pricing.price_usdc * 1_000_000));
+  const submittedUnits = BigInt(payment_authorization.value ?? "0");
+  if (submittedUnits < requiredUnits) {
+    return Response.json(
+      { error: `Payment amount insufficient. Required: ${requiredUnits} USDC units, submitted: ${submittedUnits}` },
+      { status: 402 },
+    );
+  }
+
+  // Rate limit: 5 task submissions per payer wallet per minute
+  pruneExpiredEntries();
+  const rl = checkRateLimit(`tasks:${payer_wallet}`, { limit: 5, windowMs: 60_000 });
+  if (!rl.allowed) {
+    return Response.json(
+      { error: "Rate limit exceeded. Max 5 tasks per minute per wallet." },
+      { status: 429, headers: { "Retry-After": String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } },
+    );
   }
 
   let verification: Awaited<ReturnType<typeof verifyNanopayment>>;
@@ -227,6 +238,15 @@ export async function POST(req: NextRequest): Promise<Response> {
         const totalCostUsdc = cost_usdc + reasoningCostUsdc;
 
         const net_usdc = pricing.price_usdc - totalCostUsdc;
+
+        // If the handler deferred the task (watch/scheduled), preserve deferred state
+        const taskAfterExecution = await getTask(taskId);
+        if (taskAfterExecution?.status === "deferred") {
+          send({ type: "complete", data: { task_id: taskId, result, net_usdc } });
+          controller.close();
+          return;
+        }
+
         await completeTask({
           id:                taskId,
           cost_usdc:         totalCostUsdc,

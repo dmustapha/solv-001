@@ -169,14 +169,21 @@ export default function Dashboard() {
       setChainId(ARC_CHAIN_ID);
       localStorage.setItem(CHAIN_KEY, String(ARC_CHAIN_ID));
       if (walletRef.current) await fetchUSDCBalance(walletRef.current);
-    } catch {
+    } catch (switchErr: unknown) {
+      // 4902 = chain not added yet — attempt to add it
+      const code = (switchErr as { code?: number })?.code;
+      if (code !== 4902) {
+        setWalletError(switchErr instanceof Error ? switchErr.message : "Failed to switch chain");
+        return;
+      }
       try {
         await eth.request({
           method: "wallet_addEthereumChain",
           params: [{
             chainId:           ARC_CHAIN_HEX,
             chainName:         "Arc Testnet",
-            nativeCurrency:    { name: "USD Coin", symbol: "USDC", decimals: 6 },
+            // MetaMask requires decimals: 18 for native currency regardless of the token
+            nativeCurrency:    { name: "Arc", symbol: "ARC", decimals: 18 },
             rpcUrls:           ["https://rpc.arcnetwork.xyz"],
             blockExplorerUrls: ["https://explorer.arcnetwork.xyz"],
           }],
@@ -189,6 +196,16 @@ export default function Dashboard() {
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const disconnectWallet = useCallback(() => {
+    setWalletAddress(null);
+    setChainId(null);
+    setUsdcBalance(null);
+    setTasks([]);
+    setWalletError("");
+    localStorage.removeItem(WALLET_KEY);
+    localStorage.removeItem(CHAIN_KEY);
   }, []);
 
   const handleNewTask = useCallback(() => {
@@ -313,6 +330,7 @@ export default function Dashboard() {
         isOnArcTestnet={isOnArcTestnet}
         onConnect={connectWallet}
         onSwitchChain={switchToArcTestnet}
+        onDisconnect={disconnectWallet}
       />
 
       {walletError && (

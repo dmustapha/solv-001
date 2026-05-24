@@ -111,6 +111,20 @@ export async function getDeferredTasks(): Promise<Task[]> {
   return result.rows.map(rowToTask);
 }
 
+export async function listTasksByWallet(wallet: string, limit = 50): Promise<Task[]> {
+  const result = await sql`
+    SELECT * FROM tasks
+    WHERE payer_wallet = ${wallet}
+    ORDER BY created_at DESC
+    LIMIT ${limit}
+  `;
+  return result.rows.map(rowToTask);
+}
+
+export async function setTaskResult(id: string, result: string): Promise<void> {
+  await sql`UPDATE tasks SET result = ${result} WHERE id = ${id}`;
+}
+
 export async function failTask(id: string, reasoning: string): Promise<void> {
   await sql`UPDATE tasks SET status = 'failed', reasoning = ${reasoning} WHERE id = ${id}`;
 }

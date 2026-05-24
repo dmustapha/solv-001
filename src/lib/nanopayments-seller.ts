@@ -2,7 +2,7 @@ import type { EIP3009Auth } from "@/types";
 
 const FACILITATOR_URL        = "https://gateway-api-testnet.circle.com";
 const TESTNET_GATEWAY_WALLET = "0x0077777d7EBA4688BDeF3E311b846F25870A19B9";
-const ARC_NETWORK            = "eip155:26";
+const ARC_NETWORK            = "eip155:5042002";
 const ARC_USDC               = "0x3600000000000000000000000000000000000000";
 
 // Ensure Google DNS is used as fallback when local resolver fails for Circle Gateway
@@ -29,7 +29,7 @@ export async function verifyNanopayment(
   auth: EIP3009Auth,
   sellerAddress: string,
 ): Promise<PaymentVerification> {
-  // Confirm payment goes to our seller address
+  // Confirm payment goes to our Circle wallet
   if (auth.to.toLowerCase() !== sellerAddress.toLowerCase()) {
     return { verified: false, error: "Payment authorization recipient mismatch" };
   }
@@ -40,35 +40,81 @@ export async function verifyNanopayment(
     return { verified: false, error: "Payment authorization expired or not yet valid" };
   }
 
-  // Submit to Circle Gateway facilitator for settlement
-  const response = await fetch(`${FACILITATOR_URL}/v1/payments/settle`, {
+  // Build x402 payment payload for Circle Gateway
+  const accepted = {
+    scheme:            "exact",
+    network:           ARC_NETWORK,
+    asset:             ARC_USDC,
+    amount:            auth.value,
+    payTo:             sellerAddress,
+    maxTimeoutSeconds: 604900,
+    extra: {
+      name:              "GatewayWalletBatched",
+      version:           "1",
+      verifyingContract: TESTNET_GATEWAY_WALLET,
+    },
+  };
+
+  const paymentPayload = {
+    x402Version: 2,
+    scheme:      "exact",
+    network:     ARC_NETWORK,
+    resource: {
+      url:         "https://solv-001.vercel.app/api/tasks",
+      description: "task",
+      mimeType:    "application/json",
+    },
+    accepted,
+    payload: {
+      authorization: {
+        from:        auth.from,
+        to:          auth.to,
+        value:       auth.value,
+        validAfter:  auth.validAfter,
+        validBefore: auth.validBefore,
+        nonce:       auth.nonce,
+      },
+      signature: auth.signature,
+    },
+  };
+
+  // Verify through Circle Gateway
+  const verifyRes = await fetch(`${FACILITATOR_URL}/v1/x402/verify`, {
     method:  "POST",
     headers: { "Content-Type": "application/json" },
-    body:    JSON.stringify({
-      from:        auth.from,
-      to:          auth.to,
-      value:       auth.value,
-      validAfter:  auth.validAfter,
-      validBefore: auth.validBefore,
-      nonce:       auth.nonce,
-      signature:   auth.signature,
-      token:       process.env.ARC_USDC_ADDRESS ?? "0x3600000000000000000000000000000000000000",
-      chainId:     26,
-    }),
+    body:    JSON.stringify({ paymentPayload, paymentRequirements: accepted }),
   });
 
-  if (!response.ok) {
-    const body = await response.json().catch(() => ({}));
-    return {
-      verified: false,
-      error: `Facilitator rejected payment: ${JSON.stringify(body)}`,
-    };
+  if (!verifyRes.ok) {
+    const body = await verifyRes.json().catch(() => ({}));
+    return { verified: false, error: `Facilitator verify failed: ${JSON.stringify(body)}` };
   }
 
-  const result = await response.json();
+  const verifyResult = await verifyRes.json() as { isValid?: boolean; invalidReason?: string };
+  if (!verifyResult.isValid) {
+    return { verified: false, error: `Payment invalid: ${verifyResult.invalidReason ?? "unknown"}` };
+  }
+
+  // Settle on-chain
+  const settleRes = await fetch(`${FACILITATOR_URL}/v1/x402/settle`, {
+    method:  "POST",
+    headers: { "Content-Type": "application/json" },
+    body:    JSON.stringify({ paymentPayload, paymentRequirements: accepted }),
+  });
+
+  if (!settleRes.ok) {
+    const body = await settleRes.json().catch(() => ({}));
+    return { verified: false, error: `Facilitator settle failed: ${JSON.stringify(body)}` };
+  }
+
+  const settleResult = await settleRes.json() as { success?: boolean; transaction?: string; errorReason?: string };
+  if (!settleResult.success) {
+    return { verified: false, error: `Settlement failed: ${settleResult.errorReason ?? "unknown"}` };
+  }
+
   return {
-    verified:  true,
-    tx_hash:   result.txHash as `0x${string}`,
+    verified: true,
+    tx_hash:  settleResult.transaction as `0x${string}` | undefined,
   };
 }
 
@@ -122,7 +168,7 @@ export function build402Response(params: {
       payment: {
         method:          "x402",
         chain:           "arcTestnet",
-        chain_id:        26,
+        chain_id:        5042002,
         currency:        "USDC",
         token_address:   ARC_USDC,
         price_usdc:      params.price_usdc,

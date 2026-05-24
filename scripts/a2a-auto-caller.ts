@@ -10,7 +10,8 @@ import { randomBytes } from "crypto";
 const AGENT_URL         = process.env.AGENT_TREASURY_URL  || process.env.NEXT_PUBLIC_APP_URL || "https://solv-001.vercel.app";
 const PRIVATE_KEY       = process.env.A2A_CALLER_PRIVATE_KEY;
 const AGENT_WALLET      = process.env.CIRCLE_WALLET_ADDRESS;
-const ARC_CHAIN_ID      = 26;
+const ARC_CHAIN_ID      = 5042002;
+const GATEWAY_WALLET    = "0x0077777d7EBA4688BDeF3E311b846F25870A19B9" as const;
 const ARC_USDC_ADDRESS  = "0x3600000000000000000000000000000000000000" as const;
 const ARC_RPC_URL       = process.env.ARC_RPC_URL ?? "https://rpc.arcnetwork.xyz";
 
@@ -40,17 +41,17 @@ const TASKS = [
 async function buildPaymentAuth(price_usdc: number) {
   const price       = parseUnits(price_usdc.toFixed(6), 6);
   const now         = BigInt(Math.floor(Date.now() / 1000));
-  const validAfter  = now - 60n;
-  const validBefore = now + 3600n;
+  const validAfter  = now - 600n;
+  const validBefore = now + 604900n;
   const nonce       = `0x${randomBytes(32).toString("hex")}` as `0x${string}`;
 
   const signature = await walletClient.signTypedData({
     account,
     domain: {
-      name:              "USD Coin",
-      version:           "2",
+      name:              "GatewayWalletBatched",
+      version:           "1",
       chainId:           ARC_CHAIN_ID,
-      verifyingContract: ARC_USDC_ADDRESS,
+      verifyingContract: GATEWAY_WALLET,
     },
     types: {
       TransferWithAuthorization: [

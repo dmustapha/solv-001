@@ -31,12 +31,15 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <span
-            className="text-[10px] font-mono uppercase tracking-widest hidden sm:block"
+          <Link
+            href="/status"
+            className="text-[10px] font-mono uppercase tracking-widest transition-colors hidden sm:block"
             style={{ color: "var(--text-3)" }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-2)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-3)"; }}
           >
-            Circle 4-Tool Stack
-          </span>
+            Agent Status →
+          </Link>
           <div className="flex items-center gap-1.5">
             <span
               className="w-1.5 h-1.5 rounded-full"

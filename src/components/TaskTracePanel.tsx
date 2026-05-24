@@ -2,13 +2,14 @@
 
 import { useEffect, useRef } from "react";
 import { isArcTxHash } from "@/lib/utils";
-import type { TraceEvent, Task } from "@/types";
+import type { TraceEvent, Task, ReasoningDecision } from "@/types";
 
 interface Props {
-  traceEvents: TraceEvent[];
-  reasoning:   string;
-  isActive:    boolean;
-  activeTask:  Task | null;
+  traceEvents:       TraceEvent[];
+  reasoning:         string;
+  reasoningDecision?: ReasoningDecision | null;
+  isActive:          boolean;
+  activeTask:        Task | null;
 }
 
 const TRACE_ICONS: Record<string, string> = {
@@ -27,7 +28,13 @@ const TRACE_COLORS: Record<string, string> = {
   result:           "var(--green)",
 };
 
-export default function TaskTracePanel({ traceEvents, reasoning, isActive, activeTask: _activeTask }: Props) {
+const DECISION_COLOR: Record<string, string> = {
+  ACCEPT: "var(--green)",
+  DEFER:  "var(--amber)",
+  REJECT: "var(--red)",
+};
+
+export default function TaskTracePanel({ traceEvents, reasoning, reasoningDecision, isActive, activeTask: _activeTask }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -93,10 +100,26 @@ export default function TaskTracePanel({ traceEvents, reasoning, isActive, activ
               }}
             >
               {reasoning}
-              {isActive && traceEvents.length === 0 && (
+              {isActive && traceEvents.length === 0 && !reasoningDecision && (
                 <span className="animate-blink" style={{ color: "var(--violet)" }}>▌</span>
               )}
             </div>
+            {reasoningDecision && (() => {
+              const dc = DECISION_COLOR[reasoningDecision.decision] ?? "var(--text-2)";
+              return (
+              <div className="flex items-center gap-2 mt-2">
+                <span
+                  className="text-[10px] font-mono px-2 py-0.5 border"
+                  style={{ color: dc, borderColor: `${dc}40`, background: `${dc}0a` }}
+                >
+                  {reasoningDecision.decision}
+                </span>
+                <span className="text-[10px] font-mono line-clamp-1" style={{ color: "var(--text-2)" }}>
+                  {reasoningDecision.explanation}
+                </span>
+              </div>
+              );
+            })()}
           </div>
         )}
 

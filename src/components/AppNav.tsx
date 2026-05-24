@@ -15,6 +15,7 @@ interface Props {
   isOnArcTestnet?: boolean;
   onConnect?:      () => void;
   onSwitchChain?:  () => void;
+  onDisconnect?:   () => void;
 }
 
 export default function AppNav({
@@ -23,6 +24,7 @@ export default function AppNav({
   isOnArcTestnet,
   onConnect,
   onSwitchChain,
+  onDisconnect,
 }: Props) {
   const pathname = usePathname();
 
@@ -109,24 +111,39 @@ export default function AppNav({
 
         {/* Connected + right chain */}
         {walletAddress && isOnArcTestnet && (
-          <div
-            className="flex items-center gap-2 px-3 py-1.5 border"
-            style={{
-              background:  "rgba(0,200,128,0.05)",
-              borderColor: "rgba(0,200,128,0.2)",
-            }}
-          >
-            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: "var(--green)" }} />
-            <span className="text-[11px] font-mono" style={{ color: "var(--text-2)" }}>
-              {walletAddress.slice(0, 6)}&hellip;{walletAddress.slice(-4)}
-            </span>
-            {usdcBalance != null && (
-              <>
-                <span style={{ color: "var(--wire-2)" }}>·</span>
-                <span className="text-[12px] font-mono font-medium" style={{ color: "var(--amber)" }}>
-                  ${usdcBalance.toFixed(2)}
-                </span>
-              </>
+          <div className="flex items-center gap-2">
+            <div
+              className="flex items-center gap-2 px-3 py-1.5 border"
+              style={{
+                background:  "rgba(0,200,128,0.05)",
+                borderColor: "rgba(0,200,128,0.2)",
+              }}
+            >
+              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: "var(--green)" }} />
+              <span className="text-[11px] font-mono" style={{ color: "var(--text-2)" }}>
+                {walletAddress.slice(0, 6)}&hellip;{walletAddress.slice(-4)}
+              </span>
+              {usdcBalance != null && (
+                <>
+                  <span style={{ color: "var(--wire-2)" }}>·</span>
+                  <span className="text-[12px] font-mono font-medium" style={{ color: "var(--amber)" }}>
+                    ${usdcBalance.toFixed(2)}
+                  </span>
+                </>
+              )}
+            </div>
+            {onDisconnect && (
+              <button
+                type="button"
+                onClick={onDisconnect}
+                className="text-[11px] transition-colors px-1.5"
+                style={{ color: "var(--text-3)" }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--red)"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-3)"; }}
+                title="Disconnect wallet"
+              >
+                Disconnect
+              </button>
             )}
           </div>
         )}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import Link from "next/link";
+import AppNav          from "@/components/AppNav";
 import TreasuryPanel    from "@/components/TreasuryPanel";
 import TaskHistoryPanel from "@/components/TaskHistoryPanel";
 import type { TreasuryState, Task } from "@/types";
@@ -43,57 +43,31 @@ export default function StatusPage() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "var(--bg)" }}>
-      <header
-        className="flex items-center justify-between px-5 py-2.5 border-b shrink-0"
-        style={{ borderColor: "var(--wire)", background: "var(--surf)" }}
-      >
-        <div className="flex items-center gap-5">
-          <Link
-            href="/dashboard"
-            className="text-[12px] font-mono font-semibold tracking-widest transition-colors"
-            style={{ color: "var(--amber)" }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = "0.7"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = "1"; }}
-          >
-            ← Dashboard
-          </Link>
-          <span className="h-3 w-px" style={{ background: "var(--wire-2)" }} />
-          <span className="text-[10px] font-mono uppercase tracking-widest" style={{ color: "var(--text-3)" }}>
-            Agent Status · All Wallets
-          </span>
-        </div>
+      <AppNav />
 
-        <div className="flex items-center gap-1.5">
-          <span
-            className="w-1.5 h-1.5 rounded-full"
-            style={{ background: "var(--green)", animation: "pulseDot 2s ease-in-out infinite" }}
+      <div className="flex flex-1 min-h-0">
+        {/* Task history — primary */}
+        <main className="flex-1 min-w-0 flex flex-col p-5 gap-4 overflow-y-auto">
+          <TaskHistoryPanel
+            tasks={tasks}
+            walletAddress={null}
+            globalView={true}
+            onTaskClick={() => {}}
           />
-          <span className="text-[10px] font-mono" style={{ color: "var(--green)" }}>LIVE</span>
-        </div>
-      </header>
+        </main>
 
-      <div className="flex-1 min-h-0 px-4 pt-3 pb-3">
-        <div className="grid grid-cols-12 gap-2 h-[calc(100vh-88px)]">
-          {/* Treasury */}
-          <div className="col-span-4 flex flex-col gap-2">
-            <TreasuryPanel treasury={treasury} />
-            {treasuryError && (
-              <p className="text-[10px] font-mono px-1" style={{ color: "var(--red)" }}>
-                {treasuryError}
-              </p>
-            )}
-          </div>
-
-          {/* Global task history */}
-          <div className="col-span-8 flex flex-col gap-2 overflow-hidden">
-            <TaskHistoryPanel
-              tasks={tasks}
-              walletAddress={null}
-              globalView={true}
-              onTaskClick={() => {}}
-            />
-          </div>
-        </div>
+        {/* Treasury — sidebar */}
+        <aside
+          className="w-72 shrink-0 border-l flex flex-col p-4 gap-3 overflow-y-auto"
+          style={{ borderColor: "var(--wire)" }}
+        >
+          <TreasuryPanel treasury={treasury} />
+          {treasuryError && (
+            <p className="text-[11px] px-1" style={{ color: "var(--red)" }}>
+              {treasuryError}
+            </p>
+          )}
+        </aside>
       </div>
     </div>
   );

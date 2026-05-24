@@ -9,13 +9,13 @@ const ARC_CHAIN_ID   = 5042002;
 const GATEWAY_WALLET = "0x0077777d7EBA4688BDeF3E311b846F25870A19B9" as const;
 
 interface Props {
-  walletAddress:     `0x${string}` | null;
-  isOnArcTestnet:    boolean;
-  uiState:           "idle" | "composing" | string;
-  selectedTaskType:  TaskType | null;
-  onTaskTypeSelect:  (type: TaskType) => void;
-  onSubmit:          (payload: Record<string, unknown>) => void;
-  onBack?:           () => void;
+  walletAddress:    `0x${string}` | null;
+  isOnArcTestnet:   boolean;
+  uiState:          "idle" | "composing" | string;
+  selectedTaskType: TaskType | null;
+  onTaskTypeSelect: (type: TaskType) => void;
+  onSubmit:         (payload: Record<string, unknown>) => void;
+  onBack?:          () => void;
 }
 
 type EthProvider = {
@@ -39,14 +39,14 @@ const TASK_LABELS: Record<TaskType, string> = {
 };
 
 const TASK_DESCRIPTIONS: Record<TaskType, string> = {
-  wallet_intelligence:    "Deep profile of any wallet address",
-  counterparty_vet:       "Risk check before transacting",
-  contract_summary:       "Plain-English contract audit",
-  conditional_payment:    "Trigger payment on-chain condition",
-  scheduled_disbursement: "Time-based payment execution",
-  wallet_watch:           "Alert when wallet activity detected",
+  wallet_intelligence:    "Full cross-chain activity profile for any address",
+  counterparty_vet:       "Risk assessment before sending funds",
+  contract_summary:       "Plain-English audit of any contract",
+  conditional_payment:    "Execute a payment when an on-chain condition is met",
+  scheduled_disbursement: "Send USDC at a specific time or date",
+  wallet_watch:           "Get alerted when a wallet makes a move",
   contract_watch:         "Monitor contract events continuously",
-  general:                "Open-ended financial reasoning",
+  general:                "Open-ended financial reasoning and research",
 };
 
 const TASK_PLACEHOLDERS: Record<TaskType, string> = {
@@ -58,6 +58,18 @@ const TASK_PLACEHOLDERS: Record<TaskType, string> = {
   wallet_watch:           "e.g., Watch 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045 for new activity",
   contract_watch:         "e.g., Monitor 0x9fdF14c5B14173D74C08Af27AebFf39240dC105A for events",
   general:                "e.g., What is the current USYC APY and should I hold or sell?",
+};
+
+// Category accent colors
+const TASK_ACCENT: Record<TaskType, string> = {
+  wallet_intelligence:    "var(--blue)",
+  counterparty_vet:       "var(--blue)",
+  contract_summary:       "var(--blue)",
+  conditional_payment:    "var(--green)",
+  scheduled_disbursement: "var(--green)",
+  wallet_watch:           "var(--violet)",
+  contract_watch:         "var(--violet)",
+  general:                "var(--amber)",
 };
 
 export default function TaskSubmitForm({
@@ -79,13 +91,13 @@ export default function TaskSubmitForm({
       transport: custom(getEth()! as Parameters<typeof custom>[0]),
     });
 
-    const [account]    = await walletClient.requestAddresses();
-    const agentWallet  = process.env.NEXT_PUBLIC_AGENT_WALLET_ADDRESS as `0x${string}`;
-    const price        = parseUnits(TASK_PRICING[taskType].price_usdc.toFixed(6), 6);
-    const now          = BigInt(Math.floor(Date.now() / 1000));
-    const validAfter   = now - 600n;
-    const validBefore  = now + 604900n;
-    const nonce        = `0x${crypto.getRandomValues(new Uint8Array(32)).reduce(
+    const [account]   = await walletClient.requestAddresses();
+    const agentWallet = process.env.NEXT_PUBLIC_AGENT_WALLET_ADDRESS as `0x${string}`;
+    const price       = parseUnits(TASK_PRICING[taskType].price_usdc.toFixed(6), 6);
+    const now         = BigInt(Math.floor(Date.now() / 1000));
+    const validAfter  = now - 600n;
+    const validBefore = now + 604900n;
+    const nonce       = `0x${crypto.getRandomValues(new Uint8Array(32)).reduce(
       (acc, b) => acc + b.toString(16).padStart(2, "0"), "",
     )}` as `0x${string}`;
 
@@ -125,11 +137,11 @@ export default function TaskSubmitForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (!task.trim())        { setError("Task description is required"); return; }
-    if (task.length > 2000)  { setError("Task must be 2000 characters or fewer"); return; }
-    if (!walletAddress)      { setError("Connect your wallet first"); return; }
-    if (!isOnArcTestnet)     { setError("Switch to Arc Testnet first"); return; }
-    if (!selectedTaskType)   { setError("Select a task type"); return; }
+    if (!task.trim())       { setError("Task description is required"); return; }
+    if (task.length > 2000) { setError("Task must be 2000 characters or fewer"); return; }
+    if (!walletAddress)     { setError("Connect your wallet first"); return; }
+    if (!isOnArcTestnet)    { setError("Switch to Arc Testnet first"); return; }
+    if (!selectedTaskType)  { setError("Select a task type"); return; }
 
     try {
       const auth = await buildPaymentAuth(selectedTaskType);
@@ -145,84 +157,103 @@ export default function TaskSubmitForm({
     }
   };
 
-  // ── Idle: card grid task type selector ────────────────────────────────────
+  // ── Idle: task type selection grid ────────────────────────────────────────
   if (uiState === "idle") {
+    const canSubmit = !!(walletAddress && isOnArcTestnet);
+
     return (
-      <div className="panel h-full flex flex-col">
-        <div className="panel-header">
-          <span className="label">What can I help you with?</span>
+      <div className="flex flex-col gap-6">
+        <div>
+          <h2 className="text-[20px] font-semibold mb-1" style={{ color: "var(--text-1)" }}>
+            Select a task
+          </h2>
+          <p className="text-[13px]" style={{ color: "var(--text-2)" }}>
+            {!walletAddress
+              ? "Connect your wallet using the button above to get started."
+              : !isOnArcTestnet
+              ? "Switch to Arc Testnet to submit tasks."
+              : "Pay per task · USDC · No subscriptions"}
+          </p>
         </div>
-        <div className="flex-1 overflow-y-auto p-4">
-          <div className="grid grid-cols-2 gap-2">
-            {(Object.keys(TASK_PRICING) as TaskType[]).map((type) => (
+
+        <div className="grid grid-cols-3 gap-3">
+          {(Object.keys(TASK_PRICING) as TaskType[]).map((type) => {
+            const accent = TASK_ACCENT[type];
+            return (
               <button
                 key={type}
                 type="button"
-                onClick={() => {
-                  if (!walletAddress || !isOnArcTestnet) return;
-                  onTaskTypeSelect(type);
+                onClick={() => { if (canSubmit) onTaskTypeSelect(type); }}
+                disabled={!canSubmit}
+                className="border p-4 text-left flex flex-col gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                style={{
+                  background:  "var(--surf)",
+                  borderColor: "var(--wire)",
+                  borderLeft:  `3px solid ${accent}`,
+                  minHeight:   "88px",
                 }}
-                disabled={!walletAddress || !isOnArcTestnet}
-                className="border p-3 text-left flex flex-col gap-1.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                style={{ background: "var(--surf-2)", borderColor: "var(--wire)" }}
                 onMouseEnter={e => {
-                  if (walletAddress && isOnArcTestnet) {
-                    (e.currentTarget as HTMLElement).style.borderColor = "var(--amber)";
-                    (e.currentTarget as HTMLElement).style.background  = "rgba(232,160,16,0.04)";
+                  if (canSubmit) {
+                    const el = e.currentTarget as HTMLElement;
+                    el.style.background   = "var(--surf-2)";
+                    el.style.borderColor  = accent;
                   }
                 }}
                 onMouseLeave={e => {
-                  (e.currentTarget as HTMLElement).style.borderColor = "var(--wire)";
-                  (e.currentTarget as HTMLElement).style.background  = "var(--surf-2)";
+                  const el = e.currentTarget as HTMLElement;
+                  el.style.background  = "var(--surf)";
+                  el.style.borderColor = "var(--wire)";
                 }}
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-[12px] font-mono font-semibold" style={{ color: "var(--text-1)" }}>
+                <div className="flex items-start justify-between gap-2">
+                  <span className="text-[14px] font-medium leading-snug" style={{ color: "var(--text-1)" }}>
                     {TASK_LABELS[type]}
                   </span>
-                  <span className="text-[11px] font-mono" style={{ color: "var(--amber)" }}>
+                  <span
+                    className="text-[13px] font-mono font-semibold shrink-0"
+                    style={{ color: "var(--amber)" }}
+                  >
                     ${TASK_PRICING[type].price_usdc.toFixed(2)}
                   </span>
                 </div>
-                <span className="text-[10px] font-mono leading-snug" style={{ color: "var(--text-3)" }}>
+                <span className="text-[12px] leading-snug" style={{ color: "var(--text-2)" }}>
                   {TASK_DESCRIPTIONS[type]}
                 </span>
               </button>
-            ))}
-          </div>
-
-          {(!walletAddress || !isOnArcTestnet) && (
-            <p className="text-[10px] font-mono text-center mt-4" style={{ color: "var(--text-3)" }}>
-              {!walletAddress ? "Connect your wallet to submit tasks" : "Switch to Arc Testnet to continue"}
-            </p>
-          )}
+            );
+          })}
         </div>
       </div>
     );
   }
 
-  // ── Composing: textarea + submit ───────────────────────────────────────────
+  // ── Composing: textarea + submit ──────────────────────────────────────────
   return (
-    <div className="panel h-full flex flex-col">
+    <div className="panel flex-1 flex flex-col">
       <div className="panel-header">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {onBack && (
-            <button
-              type="button"
-              onClick={onBack}
-              className="text-[11px] font-mono transition-colors"
-              style={{ color: "var(--text-3)" }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-2)"; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-3)"; }}
-            >
-              ←
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={onBack}
+                className="text-[13px] font-medium transition-colors"
+                style={{ color: "var(--text-2)" }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-1)"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-2)"; }}
+              >
+                ← Back
+              </button>
+              <span className="h-3 w-px" style={{ background: "var(--wire-2)" }} />
+            </>
           )}
-          <span className="label">{selectedTaskType ? TASK_LABELS[selectedTaskType] : "Task"}</span>
+          <span className="text-[14px] font-semibold" style={{ color: "var(--text-1)" }}>
+            {selectedTaskType ? TASK_LABELS[selectedTaskType] : "New Task"}
+          </span>
         </div>
         {pricing && (
-          <span className="text-[13px] font-mono font-semibold" style={{ color: "var(--amber)" }}>
-            ${pricing.price_usdc.toFixed(2)} USDC
+          <span className="font-mono text-[14px] font-semibold" style={{ color: "var(--amber)" }}>
+            ${pricing.price_usdc.toFixed(2)}
           </span>
         )}
       </div>
@@ -232,28 +263,33 @@ export default function TaskSubmitForm({
           value={task}
           onChange={e => setTask(e.target.value)}
           placeholder={selectedTaskType ? TASK_PLACEHOLDERS[selectedTaskType] : "Describe your task..."}
-          className="flex-1 border px-3 py-2.5 text-[13px] font-mono resize-none focus:outline-none transition-colors"
-          style={{ background: "var(--surf-2)", borderColor: "var(--wire)", color: "var(--text-1)", minHeight: "120px" }}
+          className="flex-1 border px-3 py-3 text-[14px] resize-none focus:outline-none transition-colors"
+          style={{
+            background:   "var(--surf-2)",
+            borderColor:  "var(--wire)",
+            color:        "var(--text-1)",
+            minHeight:    "120px",
+          }}
           onFocus={e => { (e.currentTarget as HTMLElement).style.borderColor = "var(--amber)"; }}
-          onBlur={e => { (e.currentTarget as HTMLElement).style.borderColor = "var(--wire)"; }}
+          onBlur={e =>  { (e.currentTarget as HTMLElement).style.borderColor = "var(--wire)"; }}
           maxLength={2000}
           autoFocus
         />
 
         {task.length > 1800 && (
-          <div className="text-[10px] font-mono text-right -mt-2" style={{ color: "var(--amber)" }}>
+          <div className="text-[11px] font-mono text-right -mt-1" style={{ color: "var(--amber)" }}>
             {task.length}/2000
           </div>
         )}
 
         {error && (
-          <p className="text-[11px] font-mono" style={{ color: "var(--red)" }}>{error}</p>
+          <p className="text-[12px]" style={{ color: "var(--red)" }}>{error}</p>
         )}
 
         <button
           type="submit"
           disabled={!walletAddress || !isOnArcTestnet || !task.trim()}
-          className="w-full border py-2.5 text-[12px] font-mono font-semibold transition-all disabled:opacity-30"
+          className="w-full border py-3 text-[13px] font-medium transition-all disabled:opacity-30"
           style={{ background: "transparent", borderColor: "var(--amber)", color: "var(--amber)" }}
           onMouseEnter={e => {
             if (walletAddress && isOnArcTestnet) {
@@ -262,7 +298,9 @@ export default function TaskSubmitForm({
           }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
         >
-          {pricing ? `Run task — $${pricing.price_usdc.toFixed(2)} USDC` : "Run task"}
+          {pricing
+            ? `Run ${TASK_LABELS[selectedTaskType!]} · $${pricing.price_usdc.toFixed(2)} USDC`
+            : "Run task"}
         </button>
       </form>
     </div>

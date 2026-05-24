@@ -325,6 +325,18 @@ export default function Dashboard() {
       )}
 
       <div className="flex flex-1 min-h-0">
+        {/* ── History sidebar (left) ────────────────────────────── */}
+        <aside
+          className="w-72 shrink-0 border-r flex flex-col overflow-hidden"
+          style={{ borderColor: "var(--wire)" }}
+        >
+          <TaskHistoryPanel
+            tasks={tasks}
+            walletAddress={walletAddress}
+            onTaskClick={viewTask}
+          />
+        </aside>
+
         {/* ── Main task area ───────────────────────────────────── */}
         <main className="flex-1 min-w-0 flex flex-col p-5 gap-4 overflow-y-auto">
           {viewingTask ? (
@@ -399,17 +411,6 @@ export default function Dashboard() {
           )}
         </main>
 
-        {/* ── History sidebar ──────────────────────────────────── */}
-        <aside
-          className="w-80 shrink-0 border-l flex flex-col overflow-hidden"
-          style={{ borderColor: "var(--wire)" }}
-        >
-          <TaskHistoryPanel
-            tasks={tasks}
-            walletAddress={walletAddress}
-            onTaskClick={viewTask}
-          />
-        </aside>
       </div>
     </div>
   );

@@ -162,21 +162,27 @@ export default function TaskSubmitForm({
     const canSubmit = !!(walletAddress && isOnArcTestnet);
 
     return (
-      <div className="flex-1 min-h-0 flex flex-col gap-4">
-        <div>
-          <h2 className="text-[20px] font-semibold mb-1" style={{ color: "var(--text-1)" }}>
-            Select a task
-          </h2>
-          <p className="text-[13px]" style={{ color: "var(--text-2)" }}>
+      <div className="flex-1 min-h-0 flex flex-col items-center justify-center gap-8 py-10">
+
+        {/* Context */}
+        <div className="text-center">
+          <div
+            className="text-[10px] font-mono tracking-widest mb-3"
+            style={{ color: "var(--amber-dim)" }}
+          >
+            SOLV-001 · Arc Testnet
+          </div>
+          <p className="text-[13px] max-w-xs" style={{ color: "var(--text-2)" }}>
             {!walletAddress
               ? "Connect your wallet using the button above to get started."
               : !isOnArcTestnet
               ? "Switch to Arc Testnet to submit tasks."
-              : "Pay per task · USDC · No subscriptions"}
+              : "Select a task type. Pay per task, no subscription."}
           </p>
         </div>
 
-        <div className="grid grid-cols-4 gap-3 flex-1 min-h-0">
+        {/* Task grid — centered, max-width contained */}
+        <div className="w-full max-w-2xl grid grid-cols-4 gap-3">
           {(Object.keys(TASK_PRICING) as TaskType[]).map((type) => {
             const accent = TASK_ACCENT[type];
             return (
@@ -185,17 +191,18 @@ export default function TaskSubmitForm({
                 type="button"
                 onClick={() => { if (canSubmit) onTaskTypeSelect(type); }}
                 disabled={!canSubmit}
-                className="border p-4 text-left flex flex-col gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed h-full"
+                className="border p-4 text-left flex flex-col gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{
                   background:  "var(--surf)",
                   borderColor: "var(--wire)",
                   borderLeft:  `3px solid ${accent}`,
+                  minHeight:   "100px",
                 }}
                 onMouseEnter={e => {
                   if (canSubmit) {
                     const el = e.currentTarget as HTMLElement;
-                    el.style.background   = "var(--surf-2)";
-                    el.style.borderColor  = accent;
+                    el.style.background  = "var(--surf-2)";
+                    el.style.borderColor = accent;
                   }
                 }}
                 onMouseLeave={e => {
@@ -215,13 +222,14 @@ export default function TaskSubmitForm({
                     ${TASK_PRICING[type].price_usdc.toFixed(2)}
                   </span>
                 </div>
-                <span className="text-[12px] leading-snug flex-1" style={{ color: "var(--text-2)" }}>
+                <span className="text-[11px] leading-snug mt-auto" style={{ color: "var(--text-2)" }}>
                   {TASK_DESCRIPTIONS[type]}
                 </span>
               </button>
             );
           })}
         </div>
+
       </div>
     );
   }

@@ -27,7 +27,7 @@ const CHAINS = [
 ] as const;
 
 type Chain = typeof CHAINS[number];
-type ChainData = { name: string; txCount: number; usdcVolume: number; sentCount: number; recvCount: number };
+type ChainData = { name: string; txCount: number; usdcVolume: number; sentCount: number; recvCount: number; usdcBalance: number };
 
 // latest-10000 block window — avoids RPC log caps and timeout on public RPCs.
 // "0x0" would timeout on Ethereum/Arbitrum (too many historical logs).
@@ -47,10 +47,12 @@ async function fetchChainData(chain: Chain, address: `0x${string}`, paddedAddres
     .catch(() => 0);
   const fromBlock = "0x" + Math.max(0, latestBlock - 10000).toString(16);
 
-  const [nonceRes, sentRes, recvRes] = await Promise.allSettled([
+  const balSelector = `0x70a08231${paddedAddress.slice(2)}`; // balanceOf(address)
+  const [nonceRes, sentRes, recvRes, balRes] = await Promise.allSettled([
     rpc("eth_getTransactionCount", [address, "latest"], 1),
     rpc("eth_getLogs", [{ fromBlock, toBlock: "latest", address: chain.usdc, topics: [TRANSFER_SIG, paddedAddress] }], 2),
     rpc("eth_getLogs", [{ fromBlock, toBlock: "latest", address: chain.usdc, topics: [TRANSFER_SIG, null, paddedAddress] }], 3),
+    rpc("eth_call", [{ to: chain.usdc, data: balSelector }, "latest"], 4),
   ]);
 
   const txCount   = nonceRes.status === "fulfilled"
@@ -59,8 +61,10 @@ async function fetchChainData(chain: Chain, address: `0x${string}`, paddedAddres
   const sentLogs  = sentRes.status === "fulfilled" ? ((sentRes.value as { result: unknown[] }).result ?? []) : [];
   const recvLogs  = recvRes.status === "fulfilled" ? ((recvRes.value as { result: unknown[] }).result ?? []) : [];
   const usdcVolume = [...sentLogs, ...recvLogs].reduce<number>((s, l) => s + decodeLog(l), 0);
+  const balRaw     = balRes.status === "fulfilled" ? ((balRes.value as { result?: string }).result ?? "0x") : "0x";
+  const usdcBalance = balRaw && balRaw !== "0x" ? Number(BigInt(balRaw)) / 1e6 : 0;
 
-  return { name: chain.name, txCount, usdcVolume, sentCount: sentLogs.length, recvCount: recvLogs.length };
+  return { name: chain.name, txCount, usdcVolume, sentCount: sentLogs.length, recvCount: recvLogs.length, usdcBalance };
 }
 
 // ─── Module-level: known Arc contract registry ────────────────────────────────
@@ -210,23 +214,28 @@ async function executeWalletIntelligence(
   const activeChains        = chainData.filter(c => c.txCount > 0);
   const mostActive          = [...activeChains].sort((a, b) => b.txCount - a.txCount)[0]?.name ?? "Arc only";
 
-  // Claude Haiku reasoning — 800 tokens, 5-section structured report
+  // Sample up to 5 unique counterparties for context
+  const counterpartySample = [...counterparties].slice(0, 5);
+
+  // Claude Sonnet reasoning — 1200 tokens, 5-section structured report
   const prompt = `You are a blockchain intelligence analyst. Analyze this wallet and provide a structured report.
 
 WALLET ADDRESS: ${address}
 
-ARC TESTNET (Circle payments chain):
-- Nonce: ${txCountArc} (lifetime transactions)
-- USDC sent (all-time): $${arcSentTotal.toFixed(2)}
-- USDC received (all-time): $${arcReceivedTotal.toFixed(2)}
+ARC TESTNET (Circle payments chain — full history):
+- Outbound nonce: ${txCountArc} (transactions SENT from this address only; does not count received txs)
+- USDC sent (all-time): $${arcSentTotal.toFixed(2)} across ${sentLogs.length} transfers
+- USDC received (all-time): $${arcReceivedTotal.toFixed(2)} across ${receivedLogs.length} transfers
 - Current USDC balance: $${arcUsdcBal.toFixed(4)}
-- Unique counterparties: ${counterparties.size}
+- Unique counterparties: ${counterparties.size}${counterpartySample.length > 0 ? `\n- Sample counterparties: ${counterpartySample.join(", ")}` : ""}
 
-CROSS-CHAIN ACTIVITY (last ~10,000 blocks per chain):
-${chainData.map(c => `- ${c.name}: ${c.txCount} txs | $${c.usdcVolume.toFixed(2)} USDC volume`).join("\n")}
+CROSS-CHAIN ACTIVITY (last ~10,000 blocks per chain ≈ 1–2 days on Ethereum, ~5 hours on Polygon):
+${chainData.map(c => `- ${c.name}: ${c.txCount} outbound txs | $${c.usdcBalance.toFixed(2)} USDC balance | $${c.usdcVolume.toFixed(2)} USDC volume in window`).join("\n")}
 
-SUMMARY: ${totalCrossChainTxs} total transactions across ${activeChains.length} chains | $${totalCrossChainUsdc.toFixed(2)} USDC volume
+SUMMARY: ${totalCrossChainTxs} total outbound txs across ${activeChains.length} chains | $${totalCrossChainUsdc.toFixed(2)} USDC volume in window
 MOST ACTIVE: ${mostActive}
+
+NOTE: Cross-chain data covers only the recent block window. Low volume may reflect the window, not the wallet's full history.
 
 TASK: ${task.task}
 
@@ -242,8 +251,8 @@ Be specific. Reference actual numbers. No generic advice.`;
   let analysisText = "";
   try {
     const analysis = await anthropic.messages.create({
-      model:      "claude-haiku-4-5-20251001",
-      max_tokens: 800,
+      model:      "claude-sonnet-4-6",
+      max_tokens: 1200,
       messages:   [{ role: "user", content: prompt }],
     });
     analysisText = analysis.content[0]?.type === "text" ? analysis.content[0].text : "";
@@ -276,19 +285,45 @@ async function executeContractSummary(
 ): Promise<{ result: string; cost_usdc: number; expense_tx_hashes: `0x${string}`[] }> {
   const address = (extractAddress(task.task) ?? USYC_ADDRESS_PLACEHOLDER).toLowerCase() as `0x${string}`;
 
-  // Check known registry first — no RPC needed
+  // Check known registry first — still run Claude analysis with the registry context
   const known = KNOWN_CONTRACTS[address];
   if (known) {
     await emitAndRecord(task.id, {
       task_id:     task.id,
       type:        "query",
-      description: "Matched known Arc contract registry",
-      cost_usdc:   0,
+      description: `Matched known registry: ${known.name}`,
+      cost_usdc:   RESEARCH_COST,
       timestamp:   new Date(),
     }, sendTrace);
-    const result = `${known.name} (${known.type})\n\n${known.description}\n\nAddress: ${address}`;
-    await emitAndRecord(task.id, { task_id: task.id, type: "result", description: "Known contract — registry lookup", timestamp: new Date() }, sendTrace);
-    return { result, cost_usdc: 0, expense_tx_hashes: [] };
+    const knownPrompt = `You are a smart contract analyst. A user asked about this Arc testnet contract.
+
+CONTRACT: ${known.name} (${known.type})
+ADDRESS: ${address}
+DESCRIPTION: ${known.description}
+
+TASK: ${task.task}
+
+Provide a thorough technical report covering:
+1. CONTRACT TYPE: What kind of contract is this and what protocol does it belong to?
+2. KEY FUNCTIONS: What operations can users and developers perform with it?
+3. INTEGRATION NOTES: How would someone interact with this contract in practice?
+4. RISK/NOTES: Any relevant security considerations or important caveats?
+
+Reference specific details from the description. Be precise.`;
+
+    let result = `${known.name} (${known.type})\nAddress: ${address}\n\n${known.description}`;
+    try {
+      const analysis = await anthropic.messages.create({
+        model:      "claude-sonnet-4-6",
+        max_tokens: 800,
+        messages:   [{ role: "user", content: knownPrompt }],
+      });
+      const summary = analysis.content[0]?.type === "text" ? analysis.content[0].text : "";
+      if (summary) result = `${known.name} (${known.type})\nAddress: ${address}\n\n${summary}`;
+      await insertTreasuryEvent({ type: "expense", amount_usdc: RESEARCH_COST }).catch(() => null);
+    } catch { /* fall through with registry description */ }
+    await emitAndRecord(task.id, { task_id: task.id, type: "result", description: "Report delivered", timestamp: new Date() }, sendTrace);
+    return { result, cost_usdc: RESEARCH_COST, expense_tx_hashes: [] };
   }
 
   // Unknown contract — fetch bytecode
@@ -318,7 +353,9 @@ async function executeContractSummary(
         if (fnName === "decimals") {
           erc20Data[fnName] = parseInt(raw, 16).toString();
         } else if (fnName === "totalSupply") {
-          erc20Data[fnName] = (Number(BigInt(raw)) / 1e6).toFixed(2) + " (assuming 6 decimals)";
+          // Use actual decimals if already fetched, else defer to post-loop correction
+          const dec = erc20Data.decimals ? parseInt(erc20Data.decimals) : 6;
+          erc20Data[fnName] = (Number(BigInt(raw)) / Math.pow(10, dec)).toFixed(2);
         } else {
           // ABI-decode string: skip 32-byte offset + 32-byte length, read UTF-8
           try {
@@ -366,8 +403,8 @@ Be specific. Reference the selectors/token info. Max 5 sentences per section.`;
   let result = "";
   try {
     const analysis = await anthropic.messages.create({
-      model:      "claude-haiku-4-5-20251001",
-      max_tokens: 600,
+      model:      "claude-sonnet-4-6",
+      max_tokens: 800,
       messages:   [{ role: "user", content: prompt }],
     });
     const summary = analysis.content[0]?.type === "text" ? analysis.content[0].text : "";
@@ -438,7 +475,7 @@ async function executePayment(
     if (scheduledDate && scheduledDate > new Date()) {
       const isoDate = scheduledDate.toISOString().slice(0, 10);
       const state   = JSON.stringify({ scheduled_date: isoDate, to_address: toAddress, amount });
-      const result  = `Scheduled for ${isoDate}. Daily check active — payment will execute on or after that date.`;
+      const result  = `Scheduled for ${isoDate}. Daily check runs at 08:00 UTC — payment will execute on or after that morning.`;
       await setTaskResult(task.id, result);
       await deferTask(task.id, state);
       await emitAndRecord(task.id, { task_id: task.id, type: "result", description: result, timestamp: new Date() }, sendTrace);
@@ -484,8 +521,8 @@ async function executePayment(
 
 CONDITION TEXT: "${task.task}"
 LIVE VALUES:
-- agent_balance: ${agentBalance}
-- payer_balance: ${payerBalance}
+- agent_balance: ${agentBalance} (USDC balance of the agent/sender wallet)
+- recipient_balance: ${payerBalance} (USDC balance of the recipient wallet ${toAddress})
 - block_number: ${blockNumber}
 - current_date: ${new Date().toISOString().slice(0, 10)}
 
@@ -579,29 +616,59 @@ async function executeWatchTask(
     return { result: "No address found in task — monitoring not started.", cost_usdc: 0, expense_tx_hashes: [] };
   }
 
-  // Baseline snapshot
-  const txCount = await getTransactionCount(address).catch(() => 0);
-  await insertTreasuryEvent({ type: "expense", amount_usdc: DATA_COST }).catch(() => null);
+  // Baseline snapshot — wallet_watch tracks outbound nonce + incoming USDC transfers
+  // contract_watch tracks block number (contract nonces never increment from external calls)
+  const paddedAddress = "0x" + "0".repeat(24) + address.slice(2).toLowerCase();
 
-  await emitAndRecord(task.id, {
-    task_id:     task.id,
-    type:        "query",
-    description: "On-chain state snapshot (monitoring baseline)",
-    cost_usdc:   DATA_COST,
-    timestamp:   new Date(),
-  }, sendTrace);
+  let state: string;
+  let result: string;
 
-  // Store baseline state for daily cron checker
-  const state  = JSON.stringify({ baseline_tx_count: txCount, address });
-  const label  = task.task_type === "wallet_watch" ? "wallet" : "contract";
-  const result = `Monitoring ${label} ${address}. Baseline: ${txCount} transactions on Arc testnet. Checked daily — new activity will trigger an alert.`;
+  if (task.task_type === "wallet_watch") {
+    const [txCount, recvLogs, chainState] = await Promise.allSettled([
+      getTransactionCount(address).catch(() => 0),
+      getLogs({ fromBlock: "0x0", toBlock: "latest", address: ARC_USDC, topics: [TRANSFER_SIG, null, paddedAddress] })
+        .then(l => l.length).catch(() => 0),
+      checkChainLive().catch(() => ({ blockNumber: 0 })),
+    ]);
+    const baselineTxCount   = txCount.status   === "fulfilled" ? (txCount.value as number) : 0;
+    const baselineRecvCount = recvLogs.status  === "fulfilled" ? (recvLogs.value as number) : 0;
+    const baselineBlock     = chainState.status === "fulfilled" ? (chainState.value as { blockNumber: number }).blockNumber : 0;
+
+    await insertTreasuryEvent({ type: "expense", amount_usdc: DATA_COST }).catch(() => null);
+    await emitAndRecord(task.id, {
+      task_id:     task.id,
+      type:        "query",
+      description: `Wallet baseline: ${baselineTxCount} outbound txs, ${baselineRecvCount} incoming USDC transfers`,
+      cost_usdc:   DATA_COST,
+      timestamp:   new Date(),
+    }, sendTrace);
+
+    state  = JSON.stringify({ baseline_tx_count: baselineTxCount, baseline_recv_count: baselineRecvCount, baseline_block: baselineBlock, address });
+    result = `Monitoring wallet ${address}. Baseline: ${baselineTxCount} outbound txs, ${baselineRecvCount} incoming USDC transfers. Checked daily at 08:00 UTC — any new activity triggers an alert.`;
+  } else {
+    // contract_watch: use block number baseline — contract nonces don't increment from external calls
+    const chainState = await checkChainLive().catch(() => ({ blockNumber: 0 }));
+    const baselineBlock = chainState.blockNumber;
+
+    await insertTreasuryEvent({ type: "expense", amount_usdc: DATA_COST }).catch(() => null);
+    await emitAndRecord(task.id, {
+      task_id:     task.id,
+      type:        "query",
+      description: `Contract baseline: block ${baselineBlock}, monitoring for new events`,
+      cost_usdc:   DATA_COST,
+      timestamp:   new Date(),
+    }, sendTrace);
+
+    state  = JSON.stringify({ baseline_block: baselineBlock, address });
+    result = `Monitoring contract ${address} from block ${baselineBlock}. Checked daily at 08:00 UTC — new contract events trigger an alert.`;
+  }
   await setTaskResult(task.id, result);
   await deferTask(task.id, state);
 
   await emitAndRecord(task.id, {
     task_id:     task.id,
     type:        "result",
-    description: `Monitoring initialized — baseline ${txCount} txs`,
+    description: "Monitoring initialized",
     timestamp:   new Date(),
   }, sendTrace);
 
@@ -660,8 +727,8 @@ QUESTION: ${task.task}`;
   let result = "Research complete. Retrieval unavailable.";
   try {
     const response = await anthropic.messages.create({
-      model:      "claude-haiku-4-5-20251001",
-      max_tokens: 1200,
+      model:      "claude-sonnet-4-6",
+      max_tokens: 1500,
       messages:   [{ role: "user", content: prompt }],
     });
     if (response.content[0]?.type === "text") result = response.content[0].text;

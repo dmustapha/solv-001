@@ -39,3 +39,16 @@ pipeline-log.md
 *.debug-state.json
 *.wire-state.json
 *.verify-state.json
+.demo-rehearsal-state.json
+
+# internal project docs (not for public repo)
+FIX-PLAN.md
+ISSUES.md
+DEMO-FOOTGUNS.md
+DEMO-SCRIPT.md
+LIVETEST-REPORT.md
+TESTING-PLAN.md
+TESTING-PLAN-V2.md
+ai/
+proposals/
+submission/

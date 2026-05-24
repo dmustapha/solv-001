@@ -7,20 +7,10 @@ import TaskHistoryPanel from "./TaskHistoryPanel";
 import TaskTracePanel  from "./TaskTracePanel";
 import TaskResultView  from "./TaskResultView";
 import { ARC_CHAIN_ID, ARC_CHAIN_HEX, ARC_EXPLORER_URL } from "@/lib/constants";
+import { getMetaMaskProvider } from "@/lib/wallet-provider";
 import type { Task, TraceEvent, SSEEvent, ReasoningDecision, TaskType } from "@/types";
 
 type UIState = "idle" | "composing" | "loading" | "complete" | "terminal" | "error";
-
-type EthProvider = {
-  request:        (args: { method: string; params?: unknown[] }) => Promise<unknown>;
-  on:             (event: string, cb: (...args: unknown[]) => void) => void;
-  removeListener: (event: string, cb: (...args: unknown[]) => void) => void;
-};
-
-function getEth(): EthProvider | null {
-  if (typeof window === "undefined") return null;
-  return (window as unknown as { ethereum?: EthProvider }).ethereum ?? null;
-}
 
 const WALLET_KEY = "solv001_wallet";
 const CHAIN_KEY  = "solv001_chainId";
@@ -50,18 +40,16 @@ export default function Dashboard() {
   const isOnArcTestnet = chainId === ARC_CHAIN_ID;
 
   async function fetchUSDCBalance(address: string): Promise<void> {
-    const eth          = getEth();
-    const usdcContract = process.env.NEXT_PUBLIC_ARC_USDC_ADDRESS;
-    if (!eth || !usdcContract) return;
-    const calldata = "0x70a08231" + "000000000000000000000000" + address.slice(2).toLowerCase();
     try {
-      const result = await eth.request({ method: "eth_call", params: [{ to: usdcContract, data: calldata }, "latest"] });
-      setUsdcBalance(Number(BigInt(result as string)) / 1e6);
+      const res = await fetch(`/api/balance?address=${address}`);
+      if (!res.ok) { setUsdcBalance(null); return; }
+      const { usdc } = await res.json() as { usdc: number };
+      setUsdcBalance(usdc);
     } catch { setUsdcBalance(null); }
   }
 
   useEffect(() => {
-    const eth = getEth();
+    const eth = getMetaMaskProvider();
     if (!eth) return;
 
     const savedWallet = localStorage.getItem(WALLET_KEY) as `0x${string}` | null;
@@ -140,7 +128,7 @@ export default function Dashboard() {
   }, [walletAddress, fetchTasks]);
 
   const connectWallet = useCallback(async () => {
-    const eth = getEth();
+    const eth = getMetaMaskProvider();
     if (!eth) { setWalletError("No wallet detected. Install MetaMask or Rabby."); return; }
     setWalletError("");
     try {
@@ -159,43 +147,45 @@ export default function Dashboard() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Always calls wallet_addEthereumChain so MetaMask updates to the working RPC
+  // (the public https://rpc.arcnetwork.xyz endpoint is rate-limited and unreliable).
+  const addArcNetwork = useCallback(async () => {
+    const eth     = getMetaMaskProvider();
+    const rpcUrl  = process.env.NEXT_PUBLIC_ARC_RPC_URL ?? "https://rpc.arcnetwork.xyz";
+    if (!eth) return;
+    await eth.request({
+      method: "wallet_addEthereumChain",
+      params: [{
+        chainId:           ARC_CHAIN_HEX,
+        chainName:         "Arc Testnet",
+        nativeCurrency:    { name: "Arc", symbol: "ARC", decimals: 18 },
+        rpcUrls:           [rpcUrl],
+        blockExplorerUrls: ["https://explorer.arcnetwork.xyz"],
+      }],
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const switchToArcTestnet = useCallback(async () => {
-    const eth = getEth();
+    const eth = getMetaMaskProvider();
     if (!eth) return;
     setWalletError("");
     try {
+      // Always add/update Arc Testnet config first (fixes broken public RPC in MetaMask)
+      await addArcNetwork();
       await eth.request({ method: "wallet_switchEthereumChain", params: [{ chainId: ARC_CHAIN_HEX }] });
       setChainId(ARC_CHAIN_ID);
       localStorage.setItem(CHAIN_KEY, String(ARC_CHAIN_ID));
       if (walletRef.current) await fetchUSDCBalance(walletRef.current);
-    } catch (switchErr: unknown) {
-      // 4902 = chain not added yet — attempt to add it
-      const code = (switchErr as { code?: number })?.code;
-      if (code !== 4902) {
-        setWalletError(switchErr instanceof Error ? switchErr.message : "Failed to switch chain");
-        return;
-      }
-      try {
-        await eth.request({
-          method: "wallet_addEthereumChain",
-          params: [{
-            chainId:           ARC_CHAIN_HEX,
-            chainName:         "Arc Testnet",
-            // MetaMask requires decimals: 18 for native currency regardless of the token
-            nativeCurrency:    { name: "Arc", symbol: "ARC", decimals: 18 },
-            rpcUrls:           ["https://rpc.arcnetwork.xyz"],
-            blockExplorerUrls: ["https://explorer.arcnetwork.xyz"],
-          }],
-        });
-        setChainId(ARC_CHAIN_ID);
-        localStorage.setItem(CHAIN_KEY, String(ARC_CHAIN_ID));
-        if (walletRef.current) await fetchUSDCBalance(walletRef.current);
-      } catch (addErr) {
-        setWalletError(addErr instanceof Error ? addErr.message : "Failed to add Arc Testnet");
+    } catch (err: unknown) {
+      const code = (err as { code?: number })?.code;
+      // 4001 = user rejected — silent. Anything else = show error.
+      if (code !== 4001) {
+        setWalletError(err instanceof Error ? err.message : "Failed to switch to Arc Testnet");
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [addArcNetwork]);
 
   const disconnectWallet = useCallback(() => {
     setWalletAddress(null);

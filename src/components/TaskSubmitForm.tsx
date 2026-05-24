@@ -13,6 +13,7 @@ const GATEWAY_WALLET = "0x0077777d7EBA4688BDeF3E311b846F25870A19B9" as const;
 interface Props {
   walletAddress:    `0x${string}` | null;
   isOnArcTestnet:   boolean;
+  usdcBalance:      number | null;
   uiState:          "idle" | "composing" | string;
   selectedTaskType: TaskType | null;
   onTaskTypeSelect: (type: TaskType) => void;
@@ -78,6 +79,7 @@ const TASK_ACCENT: Record<TaskType, string> = {
 export default function TaskSubmitForm({
   walletAddress,
   isOnArcTestnet,
+  usdcBalance,
   uiState,
   selectedTaskType,
   onTaskTypeSelect,
@@ -89,6 +91,7 @@ export default function TaskSubmitForm({
   const [focused, setFocused] = useState(false);
 
   const pricing = selectedTaskType ? TASK_PRICING[selectedTaskType] : null;
+  const hasEnoughUsdc = pricing === null || usdcBalance === null || usdcBalance >= pricing.price_usdc;
 
   async function buildPaymentAuth(taskType: TaskType): Promise<EIP3009Auth> {
     const walletClient = createWalletClient({
@@ -147,6 +150,14 @@ export default function TaskSubmitForm({
     if (!isOnArcTestnet)    { setError("Switch to Arc Testnet first"); return; }
     if (!selectedTaskType)  { setError("Select a task type"); return; }
 
+    const price = TASK_PRICING[selectedTaskType].price_usdc;
+    if (usdcBalance !== null && usdcBalance < price) {
+      setError(
+        `Insufficient USDC balance. This task costs $${price.toFixed(2)} but your balance is $${usdcBalance.toFixed(2)}. Get testnet USDC at faucet.circle.com`,
+      );
+      return;
+    }
+
     try {
       const auth = await buildPaymentAuth(selectedTaskType);
       onSubmit({
@@ -181,6 +192,19 @@ export default function TaskSubmitForm({
               ? "Connect your wallet using the button above to get started."
               : !isOnArcTestnet
               ? "Switch to Arc Testnet to submit tasks."
+              : usdcBalance === 0
+              ? <>
+                  No USDC balance.{" "}
+                  <a
+                    href="https://faucet.circle.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: "var(--blue)" }}
+                    className="underline underline-offset-2"
+                  >
+                    Get testnet USDC →
+                  </a>
+                </>
               : "Select a task type. Pay per task, no subscription."}
           </p>
         </div>
@@ -302,7 +326,7 @@ export default function TaskSubmitForm({
                 )}
                 <button
                   type="submit"
-                  disabled={!walletAddress || !isOnArcTestnet || !task.trim()}
+                  disabled={!walletAddress || !isOnArcTestnet || !task.trim() || !hasEnoughUsdc}
                   className="btn-amber px-4 py-1.5 text-[13px] font-medium"
                   style={{ borderRadius: "6px" }}
                 >

@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import TaskSubmitForm   from "./TaskSubmitForm";
+import AppNav          from "./AppNav";
+import TaskSubmitForm  from "./TaskSubmitForm";
 import TaskHistoryPanel from "./TaskHistoryPanel";
-import TaskTracePanel   from "./TaskTracePanel";
-import TaskResultView   from "./TaskResultView";
+import TaskTracePanel  from "./TaskTracePanel";
+import TaskResultView  from "./TaskResultView";
 import type { Task, TraceEvent, SSEEvent, ReasoningDecision, TaskType } from "@/types";
 
 type UIState = "idle" | "composing" | "loading" | "complete" | "terminal" | "error";
@@ -20,26 +21,26 @@ function getEth(): EthProvider | null {
   return (window as unknown as { ethereum?: EthProvider }).ethereum ?? null;
 }
 
-const WALLET_KEY   = "solv001_wallet";
-const CHAIN_KEY    = "solv001_chainId";
-const ARC_CHAIN_ID = 5042002;
+const WALLET_KEY    = "solv001_wallet";
+const CHAIN_KEY     = "solv001_chainId";
+const ARC_CHAIN_ID  = 5042002;
 const ARC_CHAIN_HEX = "0x4cef52";
 
 export default function Dashboard() {
-  const [uiState,            setUiState]            = useState<UIState>("idle");
-  const [selectedTaskType,   setSelectedTaskType]   = useState<TaskType | null>(null);
-  const [tasks,              setTasks]              = useState<Task[]>([]);
-  const [traceEvents,        setTraceEvents]        = useState<TraceEvent[]>([]);
-  const [reasoning,          setReasoning]          = useState("");
-  const [reasoningDecision,  setReasoningDecision]  = useState<ReasoningDecision | null>(null);
-  const [activeResult,       setActiveResult]       = useState<string | null>(null);
-  const [terminalData,       setTerminalData]       = useState<{ type: "deferred" | "rejected"; reason: string } | null>(null);
-  const [submitError,        setSubmitError]        = useState("");
-  const [walletAddress,      setWalletAddress]      = useState<`0x${string}` | null>(null);
-  const [chainId,            setChainId]            = useState<number | null>(null);
-  const [usdcBalance,        setUsdcBalance]        = useState<number | null>(null);
-  const [viewingTask,        setViewingTask]        = useState<(Task & { trace: TraceEvent[] }) | null>(null);
-  const [walletError,        setWalletError]        = useState("");
+  const [uiState,           setUiState]           = useState<UIState>("idle");
+  const [selectedTaskType,  setSelectedTaskType]  = useState<TaskType | null>(null);
+  const [tasks,             setTasks]             = useState<Task[]>([]);
+  const [traceEvents,       setTraceEvents]       = useState<TraceEvent[]>([]);
+  const [reasoning,         setReasoning]         = useState("");
+  const [reasoningDecision, setReasoningDecision] = useState<ReasoningDecision | null>(null);
+  const [activeResult,      setActiveResult]      = useState<string | null>(null);
+  const [terminalData,      setTerminalData]      = useState<{ type: "deferred" | "rejected"; reason: string } | null>(null);
+  const [submitError,       setSubmitError]       = useState("");
+  const [walletAddress,     setWalletAddress]     = useState<`0x${string}` | null>(null);
+  const [chainId,           setChainId]           = useState<number | null>(null);
+  const [usdcBalance,       setUsdcBalance]       = useState<number | null>(null);
+  const [viewingTask,       setViewingTask]       = useState<(Task & { trace: TraceEvent[] }) | null>(null);
+  const [walletError,       setWalletError]       = useState("");
 
   const walletRef = useRef<`0x${string}` | null>(null);
   const tasksRef  = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -60,7 +61,6 @@ export default function Dashboard() {
     } catch { setUsdcBalance(null); }
   }
 
-  // Silent reconnect on mount + wallet event subscriptions
   useEffect(() => {
     const eth = getEth();
     if (!eth) return;
@@ -114,7 +114,6 @@ export default function Dashboard() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Wallet-filtered task polling
   const fetchTasks = useCallback(async () => {
     const wallet = walletRef.current;
     if (!wallet) return;
@@ -133,7 +132,6 @@ export default function Dashboard() {
     };
   }, [fetchTasks]);
 
-  // Fetch tasks when wallet connects/changes; clear when disconnected
   useEffect(() => {
     if (walletAddress) {
       fetchTasks();
@@ -168,9 +166,8 @@ export default function Dashboard() {
     setWalletError("");
     try {
       await eth.request({ method: "wallet_switchEthereumChain", params: [{ chainId: ARC_CHAIN_HEX }] });
-      const chain = ARC_CHAIN_ID;
-      setChainId(chain);
-      localStorage.setItem(CHAIN_KEY, String(chain));
+      setChainId(ARC_CHAIN_ID);
+      localStorage.setItem(CHAIN_KEY, String(ARC_CHAIN_ID));
       if (walletRef.current) await fetchUSDCBalance(walletRef.current);
     } catch {
       try {
@@ -184,9 +181,8 @@ export default function Dashboard() {
             blockExplorerUrls: ["https://explorer.arcnetwork.xyz"],
           }],
         });
-        const chain = ARC_CHAIN_ID;
-        setChainId(chain);
-        localStorage.setItem(CHAIN_KEY, String(chain));
+        setChainId(ARC_CHAIN_ID);
+        localStorage.setItem(CHAIN_KEY, String(ARC_CHAIN_ID));
         if (walletRef.current) await fetchUSDCBalance(walletRef.current);
       } catch (addErr) {
         setWalletError(addErr instanceof Error ? addErr.message : "Failed to add Arc Testnet");
@@ -267,7 +263,6 @@ export default function Dashboard() {
             if (!line.startsWith("data: ")) continue;
             try {
               const event = JSON.parse(line.slice(6)) as SSEEvent;
-
               if (event.type === "reasoning_chunk")    setReasoning(prev => prev + event.data);
               if (event.type === "reasoning_complete") setReasoningDecision(event.data);
               if (event.type === "trace")              setTraceEvents(prev => [...prev, event.data]);
@@ -311,166 +306,128 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div className="grid grid-cols-12 gap-2 h-[calc(100vh-88px)]">
+    <div className="min-h-screen flex flex-col" style={{ background: "var(--bg)" }}>
+      <AppNav
+        walletAddress={walletAddress}
+        usdcBalance={usdcBalance}
+        isOnArcTestnet={isOnArcTestnet}
+        onConnect={connectWallet}
+        onSwitchChain={switchToArcTestnet}
+      />
 
-      {/* Left col: Wallet + History */}
-      <div className="col-span-4 flex flex-col gap-2 overflow-hidden">
-
-        {/* Wallet bar */}
-        <div className="panel p-3 flex flex-col gap-2 shrink-0">
-          {!walletAddress ? (
-            <button
-              type="button"
-              onClick={connectWallet}
-              className="w-full border py-2 text-[12px] font-mono transition-all"
-              style={{ background: "transparent", borderColor: "var(--amber)", color: "var(--amber)" }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(232,160,16,0.08)"; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
-            >
-              Connect Wallet
-            </button>
-          ) : !isOnArcTestnet ? (
-            <button
-              type="button"
-              onClick={switchToArcTestnet}
-              className="w-full border py-2 text-[12px] font-mono transition-all"
-              style={{ background: "transparent", borderColor: "var(--amber)", color: "var(--amber)" }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(232,160,16,0.08)"; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
-            >
-              Switch to Arc Testnet
-            </button>
-          ) : (
-            <div
-              className="px-2 py-1.5 border flex items-center gap-2"
-              style={{ background: "rgba(0,200,128,0.04)", borderColor: "rgba(0,200,128,0.2)" }}
-            >
-              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: "var(--green)" }} />
-              <span className="text-[10px] font-mono truncate" style={{ color: "var(--text-2)" }}>
-                {walletAddress}
-              </span>
-              {usdcBalance !== null && (
-                <span
-                  className="ml-auto text-[10px] font-mono shrink-0"
-                  style={{ color: "var(--green)" }}
-                >
-                  ${usdcBalance.toFixed(2)}
-                </span>
-              )}
-            </div>
-          )}
-          {walletError && (
-            <p className="text-[10px] font-mono" style={{ color: "var(--red)" }}>{walletError}</p>
-          )}
+      {walletError && (
+        <div
+          className="px-5 py-2 text-[12px] border-b shrink-0"
+          style={{ color: "var(--red)", borderColor: "var(--wire)", background: "rgba(232,64,76,0.05)" }}
+        >
+          {walletError}
         </div>
+      )}
 
-        {/* Task history */}
-        <TaskHistoryPanel
-          tasks={tasks}
-          walletAddress={walletAddress}
-          onTaskClick={viewTask}
-        />
-      </div>
+      <div className="flex flex-1 min-h-0">
+        {/* ── Main task area ───────────────────────────────────── */}
+        <main className="flex-1 min-w-0 flex flex-col p-5 gap-4 overflow-y-auto">
+          {viewingTask ? (
+            <ViewingOverlay task={viewingTask} onClose={() => setViewingTask(null)} />
+          ) : (uiState === "idle" || uiState === "composing") ? (
+            <TaskSubmitForm
+              walletAddress={walletAddress}
+              isOnArcTestnet={isOnArcTestnet}
+              uiState={uiState}
+              selectedTaskType={selectedTaskType}
+              onTaskTypeSelect={handleTaskTypeSelect}
+              onSubmit={handleTaskSubmit}
+              onBack={uiState === "composing" ? handleNewTask : undefined}
+            />
+          ) : uiState === "loading" ? (
+            <TaskTracePanel
+              traceEvents={traceEvents}
+              reasoning={reasoning}
+              reasoningDecision={reasoningDecision}
+              isActive={true}
+              activeTask={null}
+            />
+          ) : uiState === "complete" ? (
+            <div className="panel flex-1 flex flex-col">
+              <div className="panel-header">
+                <span className="label">Result</span>
+                <NewTaskBtn onClick={handleNewTask} />
+              </div>
+              <div className="flex-1 overflow-y-auto scrollbar-thin">
+                <TaskResultView result={activeResult} reasoning={null} task_type={selectedTaskType} />
+              </div>
+            </div>
+          ) : uiState === "terminal" ? (
+            <div className="panel flex-1 flex flex-col">
+              <div className="panel-header">
+                <span
+                  className="label"
+                  style={{ color: terminalData?.type === "rejected" ? "var(--red)" : "var(--amber)" }}
+                >
+                  {terminalData?.type === "rejected" ? "Task Rejected" : "Task Deferred"}
+                </span>
+                <NewTaskBtn onClick={handleNewTask} label="New Task" />
+              </div>
+              <div className="flex-1 flex flex-col items-center justify-center p-8">
+                <div
+                  className="w-full max-w-lg p-6 border text-[13px] leading-relaxed"
+                  style={{
+                    borderColor: terminalData?.type === "rejected" ? "rgba(232,64,76,0.3)" : "rgba(232,160,16,0.3)",
+                    background:  terminalData?.type === "rejected" ? "rgba(232,64,76,0.04)" : "rgba(232,160,16,0.04)",
+                    color:       "var(--text-1)",
+                  }}
+                >
+                  {terminalData?.reason}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="panel flex-1 flex flex-col">
+              <div className="panel-header">
+                <span className="label" style={{ color: "var(--red)" }}>Error</span>
+                <NewTaskBtn onClick={handleNewTask} label="Try Again" />
+              </div>
+              <div className="flex-1 flex flex-col items-center justify-center p-8">
+                <div
+                  className="w-full max-w-lg p-6 border text-[13px] font-mono"
+                  style={{ borderColor: "rgba(232,64,76,0.3)", background: "rgba(232,64,76,0.04)", color: "var(--red)" }}
+                >
+                  {submitError || "An unexpected error occurred."}
+                </div>
+              </div>
+            </div>
+          )}
+        </main>
 
-      {/* Right col: Main work area */}
-      <div className="col-span-8 flex flex-col gap-2 overflow-hidden">
-        {viewingTask ? (
-          <ViewingOverlay task={viewingTask} onClose={() => setViewingTask(null)} />
-        ) : (uiState === "idle" || uiState === "composing") ? (
-          <TaskSubmitForm
+        {/* ── History sidebar ──────────────────────────────────── */}
+        <aside
+          className="w-80 shrink-0 border-l flex flex-col overflow-hidden"
+          style={{ borderColor: "var(--wire)" }}
+        >
+          <TaskHistoryPanel
+            tasks={tasks}
             walletAddress={walletAddress}
-            isOnArcTestnet={isOnArcTestnet}
-            uiState={uiState}
-            selectedTaskType={selectedTaskType}
-            onTaskTypeSelect={handleTaskTypeSelect}
-            onSubmit={handleTaskSubmit}
-            onBack={uiState === "composing" ? handleNewTask : undefined}
+            onTaskClick={viewTask}
           />
-        ) : uiState === "loading" ? (
-          <TaskTracePanel
-            traceEvents={traceEvents}
-            reasoning={reasoning}
-            reasoningDecision={reasoningDecision}
-            isActive={true}
-            activeTask={null}
-          />
-        ) : uiState === "complete" ? (
-          <div className="panel h-full flex flex-col">
-            <div className="panel-header">
-              <span className="label">Result</span>
-              <button
-                onClick={handleNewTask}
-                className="text-[10px] font-mono px-2 py-1 border transition-colors"
-                style={{ borderColor: "var(--wire)", color: "var(--text-2)" }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-1)"; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-2)"; }}
-              >
-                New Task
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto scrollbar-thin">
-              <TaskResultView result={activeResult} reasoning={null} task_type={selectedTaskType} />
-            </div>
-          </div>
-        ) : uiState === "terminal" ? (
-          <div className="panel h-full flex flex-col">
-            <div className="panel-header">
-              <span
-                className="label"
-                style={{ color: terminalData?.type === "rejected" ? "var(--red)" : "var(--amber)" }}
-              >
-                {terminalData?.type === "rejected" ? "Task Rejected" : "Task Deferred"}
-              </span>
-              <button
-                onClick={handleNewTask}
-                className="text-[10px] font-mono px-2 py-1 border transition-colors"
-                style={{ borderColor: "var(--wire)", color: "var(--text-2)" }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-1)"; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-2)"; }}
-              >
-                New Task
-              </button>
-            </div>
-            <div className="flex-1 flex flex-col items-center justify-center p-8">
-              <div
-                className="w-full max-w-lg p-6 border text-[13px] font-mono leading-relaxed"
-                style={{
-                  borderColor: terminalData?.type === "rejected" ? "rgba(255,68,68,0.3)" : "rgba(232,160,16,0.3)",
-                  background:  terminalData?.type === "rejected" ? "rgba(255,68,68,0.04)" : "rgba(232,160,16,0.04)",
-                  color:       "var(--text-1)",
-                }}
-              >
-                {terminalData?.reason}
-              </div>
-            </div>
-          </div>
-        ) : (
-          /* error */
-          <div className="panel h-full flex flex-col">
-            <div className="panel-header">
-              <span className="label" style={{ color: "var(--red)" }}>Error</span>
-              <button
-                onClick={handleNewTask}
-                className="text-[10px] font-mono px-2 py-1 border transition-colors"
-                style={{ borderColor: "var(--wire)", color: "var(--text-2)" }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-1)"; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-2)"; }}
-              >
-                Try Again
-              </button>
-            </div>
-            <div className="flex-1 flex flex-col items-center justify-center p-8">
-              <div
-                className="w-full max-w-lg p-6 border text-[13px] font-mono"
-                style={{ borderColor: "rgba(255,68,68,0.3)", background: "rgba(255,68,68,0.04)", color: "var(--red)" }}
-              >
-                {submitError || "An unexpected error occurred."}
-              </div>
-            </div>
-          </div>
-        )}
+        </aside>
       </div>
     </div>
+  );
+}
+
+// ─── Shared "new task" button ─────────────────────────────────────────────────
+
+function NewTaskBtn({ onClick, label = "New Task" }: { onClick: () => void; label?: string }) {
+  return (
+    <button
+      onClick={onClick}
+      className="text-[12px] font-medium px-3 py-1.5 border transition-colors"
+      style={{ borderColor: "var(--wire)", color: "var(--text-2)" }}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-1)"; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-2)"; }}
+    >
+      {label}
+    </button>
   );
 }
 
@@ -486,12 +443,12 @@ function ViewingOverlay({
   const arcUrl = process.env.NEXT_PUBLIC_ARC_EXPLORER_URL ?? "https://explorer.arcnetwork.xyz";
 
   return (
-    <div className="panel h-full flex flex-col">
+    <div className="panel flex-1 flex flex-col">
       <div className="panel-header">
         <div className="flex flex-col gap-0.5 flex-1 min-w-0">
           <span className="label">Task Result</span>
           <span
-            className="text-[10px] font-mono line-clamp-1"
+            className="text-[11px] font-mono line-clamp-1"
             style={{ color: "var(--text-3)" }}
           >
             {task.task}
@@ -499,7 +456,7 @@ function ViewingOverlay({
         </div>
         <button
           onClick={onClose}
-          className="text-[10px] font-mono px-2 py-1 border transition-colors shrink-0"
+          className="text-[12px] font-medium px-3 py-1.5 border transition-colors shrink-0"
           style={{ borderColor: "var(--wire)", color: "var(--text-2)" }}
           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-1)"; }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-2)"; }}
@@ -511,16 +468,10 @@ function ViewingOverlay({
       <div className="flex-1 overflow-y-auto scrollbar-thin">
         <TaskResultView result={task.result} reasoning={task.reasoning} task_type={task.task_type} />
 
-        {/* Trace events */}
         {task.trace.length > 0 && (
           <div className="px-4 pt-2 pb-4 border-t" style={{ borderColor: "var(--wire)" }}>
-            <div
-              className="text-[10px] font-mono uppercase tracking-wider mb-2"
-              style={{ color: "var(--text-3)" }}
-            >
-              Execution Trace
-            </div>
-            <div className="flex flex-col gap-1">
+            <div className="label mb-3">Execution Trace</div>
+            <div className="flex flex-col gap-1.5">
               {task.trace.map((event, i) => (
                 <div key={i} className="flex items-start gap-2 text-[11px] font-mono">
                   <span className="shrink-0" style={{ color: "var(--text-3)" }}>
@@ -531,7 +482,7 @@ function ViewingOverlay({
                     <a
                       href={`${arcUrl}/tx/${event.arc_tx_hash}`}
                       target="_blank" rel="noopener noreferrer"
-                      className="ml-auto shrink-0 text-[10px]"
+                      className="ml-auto shrink-0 text-[10px] transition-opacity hover:opacity-70"
                       style={{ color: "var(--blue)" }}
                     >
                       ↗
@@ -546,4 +497,3 @@ function ViewingOverlay({
     </div>
   );
 }
-

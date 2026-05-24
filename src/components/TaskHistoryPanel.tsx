@@ -68,7 +68,7 @@ export default function TaskHistoryPanel({ tasks, walletAddress, onTaskClick, gl
       <div className="flex-1 overflow-y-auto scrollbar-thin">
         {!walletAddress && (
           <div className="flex flex-col items-center justify-center h-full gap-2 py-12 text-center">
-            <div className="text-[11px] font-mono" style={{ color: "var(--text-3)" }}>
+            <div className="text-[11px]" style={{ color: "var(--text-3)" }}>
               Connect wallet to see your history
             </div>
           </div>
@@ -77,8 +77,8 @@ export default function TaskHistoryPanel({ tasks, walletAddress, onTaskClick, gl
         {walletAddress && tasks.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full gap-3 py-12 text-center">
             <div className="text-[28px] font-mono opacity-20" style={{ color: "var(--amber)" }}>░</div>
-            <div className="text-[12px] font-mono" style={{ color: "var(--text-3)" }}>No tasks yet</div>
-            <div className="text-[10px] font-mono" style={{ color: "var(--text-3)" }}>
+            <div className="text-[12px]" style={{ color: "var(--text-3)" }}>No tasks yet</div>
+            <div className="text-[10px]" style={{ color: "var(--text-3)" }}>
               Submit your first task to get started
             </div>
           </div>
@@ -118,7 +118,7 @@ function TaskRow({ task, index, onClick }: { task: Task; index: number; onClick?
     >
       <div className="flex items-start gap-2.5 mb-2">
         <span className="mt-1.5 w-1.5 h-1.5 rounded-full shrink-0" style={{ background: dotColor }} />
-        <span className="text-[12px] line-clamp-2 flex-1 leading-snug font-mono" style={{ color: "var(--text-1)" }}>
+        <span className="text-[12px] line-clamp-2 flex-1 leading-snug" style={{ color: "var(--text-1)" }}>
           {task.task}
         </span>
       </div>

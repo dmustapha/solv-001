@@ -212,17 +212,34 @@ export default function LandingPage() {
           backdropFilter: "blur(12px)",
         }}
       >
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-5">
           <span className="text-[13px] font-mono font-semibold tracking-widest" style={{ color: "var(--amber)" }}>
             SOLV-001
           </span>
           <span className="h-3 w-px" style={{ background: "var(--wire-2)" }} />
-          <span className="label hidden sm:block">Arc Testnet · eip155:26</span>
+          <div className="hidden sm:flex items-center">
+            {[
+              { label: "Dashboard", href: "/dashboard" },
+              { label: "Status",    href: "/status" },
+              { label: "Proof",     href: "/proof" },
+            ].map(tab => (
+              <Link
+                key={tab.href}
+                href={tab.href}
+                className="px-3 py-1.5 text-[13px] font-medium transition-colors"
+                style={{ color: "var(--text-2)", borderBottom: "2px solid transparent" }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-1)"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-2)"; }}
+              >
+                {tab.label}
+              </Link>
+            ))}
+          </div>
         </div>
 
-        <div className="flex items-center gap-5">
+        <div className="flex items-center gap-4">
           <span className="label hidden md:block">Circle 4-Tool Stack</span>
-          <div className="flex items-center gap-1.5">
+          <div className="hidden sm:flex items-center gap-1.5">
             <span
               className="w-1.5 h-1.5 rounded-full animate-pulse-dot"
               style={{ background: "var(--green)" }}
@@ -231,7 +248,7 @@ export default function LandingPage() {
           </div>
           <Link
             href="/dashboard"
-            className="text-[11px] font-mono px-3 py-1.5 border transition-all"
+            className="text-[12px] font-medium px-3 py-1.5 border transition-all"
             style={{
               borderColor: "var(--amber)",
               color:        "var(--amber)",

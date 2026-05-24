@@ -22,7 +22,7 @@ export default function TreasuryPanel({ treasury }: Props) {
 
       {!treasury && (
         <div
-          className="px-4 py-6 text-[11px] font-mono animate-pulse"
+          className="px-4 py-6 text-[11px] animate-pulse"
           style={{ color: "var(--text-3)" }}
         >
           Loading...
@@ -71,7 +71,7 @@ export default function TreasuryPanel({ treasury }: Props) {
             className="flex items-center justify-between py-2.5 border-t border-b"
             style={{ borderColor: "var(--wire)" }}
           >
-            <span className="text-[11px] font-mono" style={{ color: "var(--text-2)" }}>
+            <span className="text-[11px]" style={{ color: "var(--text-2)" }}>
               Pending income
             </span>
             <span className="text-[13px] font-mono" style={{ color: "var(--blue)" }}>
@@ -133,7 +133,7 @@ function Row({
 }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-[11px] font-mono" style={{ color: "var(--text-2)" }}>{label}</span>
+      <span className="text-[11px]" style={{ color: "var(--text-2)" }}>{label}</span>
       <span
         className={`text-[12px] font-mono ${bold ? "font-semibold" : ""}`}
         style={{ color }}

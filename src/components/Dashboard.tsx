@@ -337,7 +337,7 @@ export default function Dashboard() {
 
       <div className="flex flex-1 min-h-0">
         {/* ── Main task area ───────────────────────────────────── */}
-        <main className="flex-1 min-w-0 flex flex-col p-5 gap-4 overflow-y-auto">
+        <main className="flex-1 min-w-0 min-h-0 flex flex-col p-5 gap-4 overflow-y-auto">
           {viewingTask ? (
             <ViewingOverlay task={viewingTask} onClose={() => setViewingTask(null)} />
           ) : (uiState === "idle" || uiState === "composing") ? (

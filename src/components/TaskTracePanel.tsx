@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { isArcTxHash } from "@/lib/utils";
+import TaskProgressBar from "./TaskProgressBar";
 import type { TraceEvent, Task, ReasoningDecision } from "@/types";
 
 interface Props {
@@ -51,16 +52,24 @@ export default function TaskTracePanel({ traceEvents, reasoning, reasoningDecisi
         {isActive && (
           <span
             className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-widest"
-            style={{ color: "var(--blue)" }}
+            style={{ color: "var(--amber)" }}
           >
             <span
-              className="w-1 h-1 rounded-full"
-              style={{ background: "var(--blue)", animation: "pulseDot 1s ease-in-out infinite" }}
+              className="w-1.5 h-1.5 rounded-full animate-pulse-dot"
+              style={{ background: "var(--amber)" }}
             />
-            Active
+            Agent running
           </span>
         )}
       </div>
+
+      {/* SSE progress bar */}
+      <TaskProgressBar
+        reasoning={reasoning}
+        reasoningDecision={reasoningDecision ?? null}
+        traceEvents={traceEvents}
+        isActive={isActive}
+      />
 
       <div className="flex-1 overflow-y-auto px-4 py-3 font-mono text-[11px] scrollbar-thin flex flex-col gap-0.5">
 

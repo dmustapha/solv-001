@@ -1,6 +1,7 @@
 "use client";
 
 import { isArcTxHash } from "@/lib/utils";
+import SolvLogo from "@/components/SolvLogo";
 import type { Task, TaskType } from "@/types";
 
 interface Props {
@@ -76,7 +77,7 @@ export default function TaskHistoryPanel({ tasks, walletAddress, onTaskClick, gl
 
         {walletAddress && tasks.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full gap-3 py-12 text-center">
-            <div className="text-[28px] font-mono opacity-20" style={{ color: "var(--amber)" }}>░</div>
+            <SolvLogo size={32} color="var(--wire-2)" />
             <div className="text-[12px]" style={{ color: "var(--text-3)" }}>No tasks yet</div>
             <div className="text-[10px]" style={{ color: "var(--text-3)" }}>
               Submit your first task to get started
@@ -106,15 +107,13 @@ function TaskRow({ task, index, onClick }: { task: Task; index: number; onClick?
 
   return (
     <div
-      className={`px-4 py-3 border-b transition-colors animate-fade-up opacity-0${onClick ? " cursor-pointer" : ""}`}
+      className={`px-4 py-3 border-b animate-fade-up opacity-0${onClick ? " card-interactive" : ""}`}
       style={{
         borderColor:       "var(--wire)",
         animationDelay:    `${Math.min(index * 40, 320)}ms`,
         animationFillMode: "both",
       }}
       onClick={onClick}
-      onMouseEnter={onClick ? (e => { (e.currentTarget as HTMLElement).style.background = "var(--surf-2)"; }) : undefined}
-      onMouseLeave={onClick ? (e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }) : undefined}
     >
       <div className="flex items-start gap-2.5 mb-2">
         <span className="mt-1.5 w-1.5 h-1.5 rounded-full shrink-0" style={{ background: dotColor }} />

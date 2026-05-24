@@ -30,13 +30,14 @@ const config: Config = {
         mono: ["var(--font-mono)"],
       },
       animation: {
-        ticker:      "ticker 32s linear infinite",
-        "fade-up":   "fadeSlideUp 0.6s cubic-bezier(0.22,1,0.36,1) both",
+        ticker:       "ticker 32s linear infinite",
+        "fade-up":    "fadeSlideUp 0.6s cubic-bezier(0.22,1,0.36,1) both",
         "slide-left": "slideInLeft 0.4s cubic-bezier(0.22,1,0.36,1) both",
-        blink:       "blink 1s step-end infinite",
-        scanline:    "scanline 12s linear infinite",
-        shimmer:     "shimmer 2.5s ease-in-out infinite",
+        blink:        "blink 1s step-end infinite",
+        scanline:     "scanline 12s linear infinite",
+        shimmer:      "shimmer 2.5s ease-in-out infinite",
         "pulse-dot":  "pulseDot 2s ease-in-out infinite",
+        "slide-right": "slideInRight 0.3s cubic-bezier(0.22,1,0.36,1) both",
       },
       keyframes: {
         ticker: {

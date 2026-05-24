@@ -230,10 +230,7 @@ export default function LandingPage() {
               <Link
                 key={tab.href}
                 href={tab.href}
-                className="px-3 py-1.5 text-[13px] font-medium transition-colors"
-                style={{ color: "var(--text-2)", borderBottom: "2px solid transparent" }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-1)"; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-2)"; }}
+                className="nav-tab px-3 py-1.5 text-[13px] font-medium"
               >
                 {tab.label}
               </Link>
@@ -252,17 +249,8 @@ export default function LandingPage() {
           </div>
           <Link
             href="/dashboard"
-            className="text-[12px] font-medium px-3 py-1.5 border transition-all"
-            style={{
-              borderColor: "var(--amber)",
-              color:        "var(--amber)",
-            }}
-            onMouseEnter={e => {
-              (e.currentTarget as HTMLElement).style.background = "rgba(232,160,16,0.08)";
-            }}
-            onMouseLeave={e => {
-              (e.currentTarget as HTMLElement).style.background = "transparent";
-            }}
+            className="btn-amber text-[12px] font-medium px-3 py-1.5"
+            style={{ borderRadius: "4px" }}
           >
             Open Dashboard →
           </Link>
@@ -290,7 +278,12 @@ export default function LandingPage() {
       </div>
 
       {/* ─── Hero ────────────────────────────────────────────────────────── */}
-      <section className="max-w-5xl mx-auto px-8 pt-24 pb-20">
+      <section className="relative max-w-5xl mx-auto px-8 pt-24 pb-20">
+        {/* Dot grid background */}
+        <div
+          className="dot-grid pointer-events-none absolute inset-0 -z-10"
+          style={{ opacity: 0.35, maskImage: "radial-gradient(ellipse 80% 80% at 50% 0%, black 40%, transparent 100%)" }}
+        />
         <div
           className="text-[11px] font-mono uppercase tracking-widest mb-6 animate-fade-up opacity-0 anim-delay-1"
           style={{ color: "var(--amber-dim)", animationFillMode: "both" }}
@@ -300,20 +293,20 @@ export default function LandingPage() {
 
         <h1 className="font-mono font-semibold leading-tight mb-6">
           <div
-            className="text-[56px] animate-fade-up opacity-0 anim-delay-2"
-            style={{ color: "var(--text-1)", animationFillMode: "both" }}
+            className="animate-fade-up opacity-0 anim-delay-2"
+            style={{ fontSize: "clamp(32px, 7vw, 56px)", color: "var(--text-1)", animationFillMode: "both" }}
           >
             It earns.
           </div>
           <div
-            className="text-[56px] animate-fade-up opacity-0 anim-delay-3"
-            style={{ color: "var(--amber)", animationFillMode: "both" }}
+            className="animate-fade-up opacity-0 anim-delay-3"
+            style={{ fontSize: "clamp(32px, 7vw, 56px)", color: "var(--amber)", animationFillMode: "both" }}
           >
             It reasons.
           </div>
           <div
-            className="text-[56px] animate-fade-up opacity-0 anim-delay-4"
-            style={{ color: "var(--green)", animationFillMode: "both" }}
+            className="animate-fade-up opacity-0 anim-delay-4"
+            style={{ fontSize: "clamp(32px, 7vw, 56px)", color: "var(--green)", animationFillMode: "both" }}
           >
             It compounds.
           </div>
@@ -334,27 +327,15 @@ export default function LandingPage() {
         >
           <Link
             href="/dashboard"
-            className="px-6 py-3 text-[13px] font-mono font-semibold border-2 transition-all"
-            style={{ borderColor: "var(--amber)", color: "var(--amber)", background: "transparent" }}
-            onMouseEnter={e => {
-              const el = e.currentTarget as HTMLElement;
-              el.style.background = "rgba(232,160,16,0.10)";
-              el.style.boxShadow  = "0 0 24px rgba(232,160,16,0.12)";
-            }}
-            onMouseLeave={e => {
-              const el = e.currentTarget as HTMLElement;
-              el.style.background = "transparent";
-              el.style.boxShadow  = "none";
-            }}
+            className="btn-amber-lg px-6 py-3 text-[13px] font-mono font-semibold"
+            style={{ borderRadius: "4px" }}
           >
             View Live Dashboard →
           </Link>
           <a
             href="#flows"
-            className="text-[13px] font-mono transition-colors"
+            className="link-hover text-[13px] font-mono"
             style={{ color: "var(--text-2)" }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-1)"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-2)"; }}
           >
             How it works ↓
           </a>
@@ -438,6 +419,7 @@ export default function LandingPage() {
       >
         <div className="max-w-5xl mx-auto px-8 py-20 flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
           <div>
+            <SolvLogo size={28} className="mb-4 opacity-60" />
             <div className="label mb-3">Ready to run a task?</div>
             <h2
               className="text-[28px] font-mono font-semibold"
@@ -452,18 +434,8 @@ export default function LandingPage() {
           </div>
           <Link
             href="/dashboard"
-            className="px-8 py-4 text-[14px] font-mono font-semibold border-2 transition-all whitespace-nowrap shrink-0"
-            style={{ borderColor: "var(--amber)", color: "var(--amber)" }}
-            onMouseEnter={e => {
-              const el = e.currentTarget as HTMLElement;
-              el.style.background = "rgba(232,160,16,0.10)";
-              el.style.boxShadow  = "0 0 32px rgba(232,160,16,0.15)";
-            }}
-            onMouseLeave={e => {
-              const el = e.currentTarget as HTMLElement;
-              el.style.background = "transparent";
-              el.style.boxShadow  = "none";
-            }}
+            className="btn-amber-lg px-8 py-4 text-[14px] font-mono font-semibold whitespace-nowrap shrink-0"
+            style={{ borderRadius: "4px" }}
           >
             Open Dashboard →
           </Link>
@@ -489,6 +461,15 @@ export default function LandingPage() {
             <span>Arc Testnet · Chain 26</span>
             <span>Circle CCTP + Programmable Wallets</span>
             <span>Hashnote USYC</span>
+            <a
+              href="https://github.com/dmustapha/solv-001"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="link-hover"
+              style={{ color: "var(--text-3)" }}
+            >
+              GitHub ↗
+            </a>
           </div>
         </div>
       </footer>

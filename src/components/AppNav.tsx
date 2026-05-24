@@ -56,17 +56,8 @@ export default function AppNav({
               <Link
                 key={tab.href}
                 href={tab.href}
-                className="px-3 py-1.5 text-[13px] font-medium transition-colors"
-                style={{
-                  color:        active ? "var(--amber)"  : "var(--text-2)",
-                  borderBottom: active ? "2px solid var(--amber)" : "2px solid transparent",
-                }}
-                onMouseEnter={e => {
-                  if (!active) (e.currentTarget as HTMLElement).style.color = "var(--text-1)";
-                }}
-                onMouseLeave={e => {
-                  if (!active) (e.currentTarget as HTMLElement).style.color = "var(--text-2)";
-                }}
+                className="nav-tab px-3 py-1.5 text-[13px] font-medium"
+                data-active={active ? "true" : undefined}
               >
                 {tab.label}
               </Link>
@@ -92,10 +83,8 @@ export default function AppNav({
           <button
             type="button"
             onClick={onConnect}
-            className="px-3 py-1.5 text-[12px] font-medium border transition-all"
-            style={{ borderColor: "var(--amber)", color: "var(--amber)", background: "transparent" }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(232,160,16,0.08)"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+            className="btn-amber px-3 py-1.5 text-[12px] font-medium"
+            style={{ borderRadius: "4px" }}
           >
             Connect Wallet
           </button>
@@ -106,10 +95,8 @@ export default function AppNav({
           <button
             type="button"
             onClick={onSwitchChain}
-            className="px-3 py-1.5 text-[12px] font-medium border transition-all"
-            style={{ borderColor: "var(--amber)", color: "var(--amber)", background: "transparent" }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(232,160,16,0.08)"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+            className="btn-amber px-3 py-1.5 text-[12px] font-medium"
+            style={{ borderRadius: "4px" }}
           >
             Switch to Arc Testnet
           </button>
@@ -142,8 +129,8 @@ export default function AppNav({
               <button
                 type="button"
                 onClick={onDisconnect}
-                className="text-[11px] transition-colors px-1.5"
-                style={{ color: "var(--text-3)" }}
+                className="text-[11px] px-1.5 transition-colors"
+                style={{ color: "var(--text-3)", background: "none", border: "none", cursor: "pointer" }}
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--red)"; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-3)"; }}
                 title="Disconnect wallet"

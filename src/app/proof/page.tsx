@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { CheckCircle2 } from "lucide-react";
 import AppNav from "@/components/AppNav";
 import { listTasks, getAllTimeStats } from "@/lib/db";
 import { getAgentWallet }            from "@/lib/circle-wallets";
@@ -35,18 +36,21 @@ export default async function ProofPage() {
       <main className="max-w-3xl mx-auto w-full px-6 py-10 flex flex-col gap-10">
 
         <div>
-          <h1 className="text-[22px] font-semibold mb-1" style={{ color: "var(--text-1)" }}>
+          <h1 className="text-[26px] font-semibold mb-1" style={{ color: "var(--text-1)" }}>
             Integration Proof
           </h1>
           <p className="text-[13px]" style={{ color: "var(--text-2)" }}>
-            Verifiable evidence that all Circle tool integrations are live on Arc testnet.
+            All integrations verifiable on Arc testnet. Real transactions, real data.
           </p>
         </div>
 
         {/* ── 1. Circle Developer-Controlled Wallet ── */}
         <section className="panel">
           <div className="panel-header">
-            <span className="label">Circle Developer-Controlled Wallet</span>
+            <span className="label flex items-center gap-1.5">
+              <CheckCircle2 size={12} style={{ color: "var(--green)" }} aria-hidden />
+              Circle Developer-Controlled Wallet
+            </span>
           </div>
           <div className="px-4 py-3">
             <ProofTable rows={[
@@ -67,7 +71,10 @@ export default async function ProofPage() {
         {/* ── 2. USYC Yield Position ── */}
         <section className="panel">
           <div className="panel-header">
-            <span className="label">USYC — Idle Capital Yield</span>
+            <span className="label flex items-center gap-1.5">
+              <CheckCircle2 size={12} style={{ color: "var(--green)" }} aria-hidden />
+              USYC — Idle Capital Yield
+            </span>
           </div>
           <div className="px-4 py-4 flex flex-col gap-4">
             <div className="grid grid-cols-3 gap-3">
@@ -101,7 +108,10 @@ export default async function ProofPage() {
         {/* ── 3. Nanopayments (x402) ── */}
         <section className="panel">
           <div className="panel-header">
-            <span className="label">Nanopayments (x402) — Income + Expense</span>
+            <span className="label flex items-center gap-1.5">
+              <CheckCircle2 size={12} style={{ color: "var(--green)" }} aria-hidden />
+              Nanopayments (x402) — Income + Expense
+            </span>
           </div>
           <div className="px-4 py-4 flex flex-col gap-4">
             <div className="grid grid-cols-2 gap-3">
@@ -145,7 +155,10 @@ export default async function ProofPage() {
         {/* ── 4. Claude Reasoning ── */}
         <section className="panel">
           <div className="panel-header">
-            <span className="label">Claude Reasoning — Sample</span>
+            <span className="label flex items-center gap-1.5">
+              <CheckCircle2 size={12} style={{ color: "var(--green)" }} aria-hidden />
+              Claude Reasoning — Sample
+            </span>
           </div>
           <div className="px-4 py-4">
             {completedTasks.slice(0, 1).map(task => (

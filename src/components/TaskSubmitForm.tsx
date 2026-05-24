@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { createWalletClient, custom, parseUnits } from "viem";
+import { Brain, Shield, FileText, Coins, Clock, Eye, BarChart2, Lightbulb } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { TASK_PRICING } from "@/types";
 import type { TaskType, EIP3009Auth } from "@/types";
 
@@ -60,6 +62,17 @@ const TASK_PLACEHOLDERS: Record<TaskType, string> = {
   general:                "e.g., What is the current USYC APY and should I hold or sell?",
 };
 
+const TASK_ICONS: Record<TaskType, LucideIcon> = {
+  wallet_intelligence:    Brain,
+  counterparty_vet:       Shield,
+  contract_summary:       FileText,
+  conditional_payment:    Coins,
+  scheduled_disbursement: Clock,
+  wallet_watch:           Eye,
+  contract_watch:         BarChart2,
+  general:                Lightbulb,
+};
+
 // Category accent colors
 const TASK_ACCENT: Record<TaskType, string> = {
   wallet_intelligence:    "var(--blue)",
@@ -81,8 +94,9 @@ export default function TaskSubmitForm({
   onSubmit,
   onBack,
 }: Props) {
-  const [task,  setTask]  = useState("");
-  const [error, setError] = useState("");
+  const [task,    setTask]    = useState("");
+  const [error,   setError]   = useState("");
+  const [focused, setFocused] = useState(false);
 
   const pricing = selectedTaskType ? TASK_PRICING[selectedTaskType] : null;
 
@@ -181,40 +195,28 @@ export default function TaskSubmitForm({
           </p>
         </div>
 
-        {/* Task grid — centered, max-width contained */}
-        <div className="w-full max-w-2xl grid grid-cols-4 gap-3">
+        {/* Task grid — centered, max-width contained, 2-col on mobile */}
+        <div className="w-full max-w-2xl grid grid-cols-2 sm:grid-cols-4 gap-3">
           {(Object.keys(TASK_PRICING) as TaskType[]).map((type) => {
             const accent = TASK_ACCENT[type];
+            const Icon   = TASK_ICONS[type];
             return (
               <button
                 key={type}
                 type="button"
                 onClick={() => { if (canSubmit) onTaskTypeSelect(type); }}
                 disabled={!canSubmit}
-                className="border p-4 text-left flex flex-col gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                className="border p-4 text-left flex flex-col gap-2 card-interactive rounded disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{
                   background:  "var(--surf)",
                   borderColor: "var(--wire)",
                   borderLeft:  `3px solid ${accent}`,
                   minHeight:   "100px",
-                }}
-                onMouseEnter={e => {
-                  if (canSubmit) {
-                    const el = e.currentTarget as HTMLElement;
-                    el.style.background  = "var(--surf-2)";
-                    el.style.borderColor = accent;
-                  }
-                }}
-                onMouseLeave={e => {
-                  const el = e.currentTarget as HTMLElement;
-                  el.style.background  = "var(--surf)";
-                  el.style.borderColor = "var(--wire)";
+                  borderRadius: "6px",
                 }}
               >
-                <div className="flex items-start justify-between gap-2">
-                  <span className="text-[13px] font-medium leading-snug" style={{ color: "var(--text-1)" }}>
-                    {TASK_LABELS[type]}
-                  </span>
+                <div className="flex items-start justify-between gap-1">
+                  <Icon size={14} style={{ color: accent, flexShrink: 0, marginTop: 1 }} aria-hidden />
                   <span
                     className="text-[12px] font-mono font-semibold shrink-0"
                     style={{ color: "var(--amber)" }}
@@ -222,7 +224,10 @@ export default function TaskSubmitForm({
                     ${TASK_PRICING[type].price_usdc.toFixed(2)}
                   </span>
                 </div>
-                <span className="text-[11px] leading-snug mt-auto" style={{ color: "var(--text-2)" }}>
+                <span className="text-[13px] font-medium leading-snug" style={{ color: "var(--text-1)" }}>
+                  {TASK_LABELS[type]}
+                </span>
+                <span className="text-[12px] leading-snug mt-auto" style={{ color: "var(--text-2)" }}>
                   {TASK_DESCRIPTIONS[type]}
                 </span>
               </button>
@@ -234,82 +239,97 @@ export default function TaskSubmitForm({
     );
   }
 
-  // ── Composing: textarea + submit ──────────────────────────────────────────
+  // ── Composing: Claude.ai-style input ─────────────────────────────────────
+  const accent = selectedTaskType ? TASK_ACCENT[selectedTaskType] : "var(--amber)";
+
   return (
-    <div className="panel flex-1 flex flex-col">
-      <div className="panel-header">
+    <div className="flex-1 flex flex-col items-center justify-center p-6">
+      <div className="w-full max-w-2xl flex flex-col gap-4">
+
+        {/* Back + task type header */}
         <div className="flex items-center gap-3">
           {onBack && (
-            <>
-              <button
-                type="button"
-                onClick={onBack}
-                className="text-[13px] font-medium transition-colors"
-                style={{ color: "var(--text-2)" }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-1)"; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-2)"; }}
-              >
-                ← Back
-              </button>
-              <span className="h-3 w-px" style={{ background: "var(--wire-2)" }} />
-            </>
+            <button
+              type="button"
+              onClick={onBack}
+              className="btn-ghost text-[12px] px-2 py-1 rounded"
+              style={{ borderRadius: "4px" }}
+            >
+              ← Back
+            </button>
           )}
           <span className="text-[14px] font-semibold" style={{ color: "var(--text-1)" }}>
             {selectedTaskType ? TASK_LABELS[selectedTaskType] : "New Task"}
           </span>
+          {pricing && (
+            <span className="ml-auto font-mono text-[14px] font-semibold" style={{ color: "var(--amber)" }}>
+              ${pricing.price_usdc.toFixed(2)} USDC
+            </span>
+          )}
         </div>
-        {pricing && (
-          <span className="font-mono text-[14px] font-semibold" style={{ color: "var(--amber)" }}>
-            ${pricing.price_usdc.toFixed(2)}
-          </span>
-        )}
-      </div>
 
-      <form onSubmit={handleSubmit} className="flex-1 flex flex-col p-4 gap-3">
-        <textarea
-          value={task}
-          onChange={e => setTask(e.target.value)}
-          placeholder={selectedTaskType ? TASK_PLACEHOLDERS[selectedTaskType] : "Describe your task..."}
-          className="flex-1 border px-3 py-3 text-[14px] resize-none focus:outline-none transition-colors"
+        {/* Claude.ai-style input box */}
+        <div
+          className="relative border-2 transition-all"
           style={{
-            background:   "var(--surf-2)",
-            borderColor:  "var(--wire)",
-            color:        "var(--text-1)",
-            minHeight:    "120px",
+            borderRadius:  "12px",
+            borderColor:   focused ? accent : "var(--wire)",
+            background:    "var(--surf-2)",
+            boxShadow:     focused ? "var(--shadow-amber)" : "none",
           }}
-          onFocus={e => { (e.currentTarget as HTMLElement).style.borderColor = "var(--amber)"; }}
-          onBlur={e =>  { (e.currentTarget as HTMLElement).style.borderColor = "var(--wire)"; }}
-          maxLength={2000}
-          autoFocus
-        />
+        >
+          <form onSubmit={handleSubmit} className="flex flex-col">
+            <textarea
+              value={task}
+              onChange={e => setTask(e.target.value)}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+              placeholder={selectedTaskType ? TASK_PLACEHOLDERS[selectedTaskType] : "Describe your task..."}
+              className="w-full bg-transparent px-5 pt-4 pb-2 text-[14px] resize-none focus:outline-none leading-relaxed"
+              style={{
+                color:     "var(--text-1)",
+                minHeight: "140px",
+              }}
+              maxLength={2000}
+              autoFocus
+            />
 
-        {task.length > 1800 && (
-          <div className="text-[11px] font-mono text-right -mt-1" style={{ color: "var(--amber)" }}>
-            {task.length}/2000
-          </div>
-        )}
+            {/* Footer row inside input box */}
+            <div
+              className="flex items-center justify-between px-5 pb-3 pt-2 border-t"
+              style={{ borderColor: "var(--wire)" }}
+            >
+              <span className="text-[11px] font-mono" style={{ color: "var(--text-3)" }}>
+                claude-sonnet-4-6 · Arc Testnet
+              </span>
+              <div className="flex items-center gap-3">
+                {task.length > 1000 && (
+                  <span
+                    className="text-[11px] font-mono tabular-nums"
+                    style={{ color: task.length > 1800 ? "var(--red)" : "var(--text-3)" }}
+                  >
+                    {task.length}/2000
+                  </span>
+                )}
+                <button
+                  type="submit"
+                  disabled={!walletAddress || !isOnArcTestnet || !task.trim()}
+                  className="btn-amber px-4 py-1.5 text-[13px] font-medium"
+                  style={{ borderRadius: "6px" }}
+                >
+                  {pricing
+                    ? `Run · $${pricing.price_usdc.toFixed(2)}`
+                    : "Run task →"}
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
 
         {error && (
           <p className="text-[12px]" style={{ color: "var(--red)" }}>{error}</p>
         )}
-
-        <button
-          type="submit"
-          disabled={!walletAddress || !isOnArcTestnet || !task.trim()}
-          className="w-full border py-3 text-[13px] font-medium transition-all disabled:opacity-30"
-          style={{ background: "transparent", borderColor: "var(--amber)", color: "var(--amber)" }}
-          onMouseEnter={e => {
-            if (walletAddress && isOnArcTestnet) {
-              (e.currentTarget as HTMLElement).style.background = "rgba(232,160,16,0.08)";
-            }
-          }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
-        >
-          {pricing
-            ? `Run ${TASK_LABELS[selectedTaskType!]} · $${pricing.price_usdc.toFixed(2)} USDC`
-            : "Run task"}
-        </button>
-      </form>
+      </div>
     </div>
   );
 }

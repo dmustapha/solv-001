@@ -21,11 +21,24 @@ export default function TreasuryPanel({ treasury }: Props) {
       </div>
 
       {!treasury && (
-        <div
-          className="px-4 py-6 text-[11px] animate-pulse"
-          style={{ color: "var(--text-3)" }}
-        >
-          Loading...
+        <div className="px-4 py-4 flex flex-col gap-4">
+          <div>
+            <div className="skeleton h-2 w-16 mb-2 rounded" />
+            <div className="skeleton h-7 w-28" />
+          </div>
+          <div className="pt-3 border-t" style={{ borderColor: "var(--wire)" }}>
+            <div className="skeleton h-2 w-20 mb-2 rounded" />
+            <div className="skeleton h-6 w-24" />
+          </div>
+          <div className="flex flex-col gap-2 pt-2">
+            <div className="skeleton h-3.5 w-full" />
+            <div className="skeleton h-3.5 w-4/5" />
+            <div className="skeleton h-3.5 w-3/5" />
+          </div>
+          <div className="pt-3 border-t flex flex-col gap-2" style={{ borderColor: "var(--wire)" }}>
+            <div className="skeleton h-3.5 w-full" />
+            <div className="skeleton h-3.5 w-4/5" />
+          </div>
         </div>
       )}
 
@@ -107,10 +120,8 @@ export default function TreasuryPanel({ treasury }: Props) {
             href={`${process.env.NEXT_PUBLIC_ARC_EXPLORER_URL ?? "https://explorer.arcnetwork.xyz"}/address/${process.env.NEXT_PUBLIC_AGENT_WALLET_ADDRESS ?? "0x927c1d756d12879aebea0772f3ee220f21f4841a"}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-4 pt-3 border-t text-[10px] font-mono flex items-center gap-1 transition-colors"
+            className="mt-4 pt-3 border-t text-[10px] font-mono flex items-center gap-1 link-hover link-hover-blue"
             style={{ borderColor: "var(--wire)", color: "var(--text-3)" }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--blue)"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-3)"; }}
           >
             View on Arc Explorer ↗
           </a>

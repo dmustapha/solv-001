@@ -126,7 +126,6 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
-    fetchTasks();
     tasksRef.current = setInterval(fetchTasks, 5_000);
     return () => {
       if (tasksRef.current) clearInterval(tasksRef.current);
@@ -134,7 +133,7 @@ export default function Dashboard() {
     };
   }, [fetchTasks]);
 
-  // Re-fetch tasks when wallet changes
+  // Fetch tasks when wallet connects/changes; clear when disconnected
   useEffect(() => {
     if (walletAddress) {
       fetchTasks();

@@ -28,10 +28,10 @@ const TRACE_COLORS: Record<string, string> = {
   result:           "var(--green)",
 };
 
-const DECISION_COLOR: Record<string, string> = {
-  ACCEPT: "var(--green)",
-  DEFER:  "var(--amber)",
-  REJECT: "var(--red)",
+const DECISION_STYLES: Record<string, { color: string; border: string; bg: string }> = {
+  ACCEPT: { color: "var(--green)",  border: "rgba(0,200,128,0.3)",  bg: "rgba(0,200,128,0.06)" },
+  DEFER:  { color: "var(--amber)",  border: "rgba(232,160,16,0.3)", bg: "rgba(232,160,16,0.06)" },
+  REJECT: { color: "var(--red)",    border: "rgba(255,68,68,0.3)",  bg: "rgba(255,68,68,0.06)" },
 };
 
 export default function TaskTracePanel({ traceEvents, reasoning, reasoningDecision, isActive, activeTask: _activeTask }: Props) {
@@ -105,19 +105,19 @@ export default function TaskTracePanel({ traceEvents, reasoning, reasoningDecisi
               )}
             </div>
             {reasoningDecision && (() => {
-              const dc = DECISION_COLOR[reasoningDecision.decision] ?? "var(--text-2)";
+              const ds = DECISION_STYLES[reasoningDecision.decision] ?? DECISION_STYLES.DEFER;
               return (
-              <div className="flex items-center gap-2 mt-2">
-                <span
-                  className="text-[10px] font-mono px-2 py-0.5 border"
-                  style={{ color: dc, borderColor: `${dc}40`, background: `${dc}0a` }}
-                >
-                  {reasoningDecision.decision}
-                </span>
-                <span className="text-[10px] font-mono line-clamp-1" style={{ color: "var(--text-2)" }}>
-                  {reasoningDecision.explanation}
-                </span>
-              </div>
+                <div className="flex items-center gap-2 mt-2">
+                  <span
+                    className="text-[10px] font-mono px-2 py-0.5 border"
+                    style={{ color: ds.color, borderColor: ds.border, background: ds.bg }}
+                  >
+                    {reasoningDecision.decision}
+                  </span>
+                  <span className="text-[10px] font-mono line-clamp-1" style={{ color: "var(--text-2)" }}>
+                    {reasoningDecision.explanation}
+                  </span>
+                </div>
               );
             })()}
           </div>

@@ -7,6 +7,7 @@ interface Props {
   tasks:         Task[];
   walletAddress: `0x${string}` | null;
   onTaskClick:   (id: string) => void;
+  globalView?:   boolean;
 }
 
 const STATUS_COLOR: Record<string, string> = {
@@ -49,11 +50,11 @@ const TASK_LABELS: Record<string, string> = {
   general:                "General Analysis",
 };
 
-export default function TaskHistoryPanel({ tasks, walletAddress, onTaskClick }: Props) {
+export default function TaskHistoryPanel({ tasks, walletAddress, onTaskClick, globalView = false }: Props) {
   return (
     <div className="panel flex-1 flex flex-col min-h-0">
       <div className="panel-header">
-        <span className="label">Your Tasks</span>
+        <span className="label">{globalView ? "All Tasks" : "Your Tasks"}</span>
         {tasks.length > 0 && (
           <span
             className="text-[10px] font-mono px-1.5 py-0.5 border"
@@ -83,15 +84,15 @@ export default function TaskHistoryPanel({ tasks, walletAddress, onTaskClick }: 
           </div>
         )}
 
-        {walletAddress && tasks.map((task, i) => (
-          <TaskRow key={task.id} task={task} index={i} onClick={() => onTaskClick(task.id)} />
+        {(walletAddress || globalView) && tasks.map((task, i) => (
+          <TaskRow key={task.id} task={task} index={i} onClick={globalView ? undefined : () => onTaskClick(task.id)} />
         ))}
       </div>
     </div>
   );
 }
 
-function TaskRow({ task, index, onClick }: { task: Task; index: number; onClick: () => void }) {
+function TaskRow({ task, index, onClick }: { task: Task; index: number; onClick?: () => void }) {
   const { label: statusLbl, color: dotColor } = getStatusDisplay(task);
   const typeLabel = TASK_LABELS[task.task_type] ?? task.task_type.replace(/_/g, " ");
   const arcUrl    = process.env.NEXT_PUBLIC_ARC_EXPLORER_URL ?? "https://explorer.arcnetwork.xyz";
@@ -105,15 +106,15 @@ function TaskRow({ task, index, onClick }: { task: Task; index: number; onClick:
 
   return (
     <div
-      className="px-4 py-3 border-b transition-colors animate-fade-up opacity-0 cursor-pointer"
+      className={`px-4 py-3 border-b transition-colors animate-fade-up opacity-0${onClick ? " cursor-pointer" : ""}`}
       style={{
         borderColor:       "var(--wire)",
         animationDelay:    `${Math.min(index * 40, 320)}ms`,
         animationFillMode: "both",
       }}
       onClick={onClick}
-      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "var(--surf-2)"; }}
-      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+      onMouseEnter={onClick ? (e => { (e.currentTarget as HTMLElement).style.background = "var(--surf-2)"; }) : undefined}
+      onMouseLeave={onClick ? (e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }) : undefined}
     >
       <div className="flex items-start gap-2.5 mb-2">
         <span className="mt-1.5 w-1.5 h-1.5 rounded-full shrink-0" style={{ background: dotColor }} />

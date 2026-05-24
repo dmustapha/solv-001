@@ -1,0 +1,18 @@
+<!-- SOLV-001 Favicon — simplified for 16×16 / 32×32 -->
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="32" height="32" fill="#03050A"/>
+  <!-- Diamond outline -->
+  <polygon
+    points="16,3 29,16 16,29 3,16"
+    stroke="#E8A010"
+    stroke-width="2"
+    stroke-linejoin="round"
+    fill="none"
+  />
+  <!-- Center fill — the precision point -->
+  <polygon
+    points="16,10 22,16 16,22 10,16"
+    fill="#E8A010"
+  />
+</svg>

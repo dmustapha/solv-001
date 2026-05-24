@@ -1,0 +1,29 @@
+{
+  "name": "SOLV-001",
+  "tagline": "It earns. It reasons. It compounds.",
+  "colors": {
+    "primary":    "#03050A",
+    "surface":    "#070C14",
+    "accent":     "#E8A010",
+    "accentDim":  "#9A6A08",
+    "green":      "#00C880",
+    "red":        "#E8404C",
+    "blue":       "#3A72DC",
+    "violet":     "#7048D8",
+    "text1":      "#CDD8E8",
+    "text2":      "#7A8CA0",
+    "text3":      "#38485A",
+    "wire":       "#141E2E",
+    "wire2":      "#1E2C40",
+    "background": "#03050A"
+  },
+  "fonts": {
+    "heading": "JetBrains Mono",
+    "body":    "Inter"
+  },
+  "logoPath":   "public/logo.svg",
+  "iconPath":   "public/logo-icon.svg",
+  "faviconPath": "public/favicon.svg",
+  "darkMode":   true,
+  "aesthetic":  "Terminal Ledger — precision financial instrument, dark terminal, amber on near-black"
+}

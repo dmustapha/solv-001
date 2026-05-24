@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import SolvLogo from "@/components/SolvLogo";
 
 const NAV_TABS = [
   { label: "Dashboard", href: "/dashboard" },
@@ -37,10 +38,15 @@ export default function AppNav({
       <div className="flex items-center gap-5">
         <Link
           href="/"
-          className="font-mono font-semibold text-[13px] tracking-widest shrink-0 transition-opacity hover:opacity-70"
-          style={{ color: "var(--amber)" }}
+          className="flex items-center gap-2 shrink-0 transition-opacity hover:opacity-70"
         >
-          SOLV-001
+          <SolvLogo size={18} />
+          <span
+            className="font-mono font-semibold text-[13px] tracking-widest"
+            style={{ color: "var(--amber)" }}
+          >
+            SOLV-001
+          </span>
         </Link>
         <span className="h-3 w-px shrink-0" style={{ background: "var(--wire-2)" }} />
         <div className="flex items-center">

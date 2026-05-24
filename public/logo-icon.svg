@@ -1,0 +1,19 @@
+<!-- SOLV-001 Logomark v1 — Precision Diamond Mark -->
+<!-- Concept: targeting reticle + data point = "precision financial agent" -->
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Outer diamond — precision instrument frame -->
+  <polygon
+    points="12,1.5 22.5,12 12,22.5 1.5,12"
+    stroke="#E8A010"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+    fill="none"
+  />
+  <!-- Inward tick marks — crosshair precision -->
+  <line x1="12" y1="5.5" x2="12" y2="9" stroke="#E8A010" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="12" y1="15" x2="12" y2="18.5" stroke="#E8A010" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="5.5" y1="12" x2="9" y2="12" stroke="#E8A010" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="15" y1="12" x2="18.5" y2="12" stroke="#E8A010" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Center point — the solve moment -->
+  <circle cx="12" cy="12" r="2.25" fill="#E8A010"/>
+</svg>

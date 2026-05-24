@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useInView, useCountUp } from "@/hooks/animations";
 import { TASK_PRICING } from "@/types";
+import SolvLogo from "@/components/SolvLogo";
 
 /* ─── Ticker content ─────────────────────────────────────────────────────── */
 const TICKER_ITEMS = [
@@ -213,9 +214,12 @@ export default function LandingPage() {
         }}
       >
         <div className="flex items-center gap-5">
-          <span className="text-[13px] font-mono font-semibold tracking-widest" style={{ color: "var(--amber)" }}>
-            SOLV-001
-          </span>
+          <Link href="/" className="flex items-center gap-2 transition-opacity hover:opacity-70">
+            <SolvLogo size={18} />
+            <span className="text-[13px] font-mono font-semibold tracking-widest" style={{ color: "var(--amber)" }}>
+              SOLV-001
+            </span>
+          </Link>
           <span className="h-3 w-px" style={{ background: "var(--wire-2)" }} />
           <div className="hidden sm:flex items-center">
             {[
@@ -473,9 +477,12 @@ export default function LandingPage() {
       >
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-4">
-            <span className="text-[11px] font-mono font-semibold" style={{ color: "var(--amber)" }}>
-              SOLV-001
-            </span>
+            <Link href="/" className="flex items-center gap-1.5 transition-opacity hover:opacity-70">
+              <SolvLogo size={14} />
+              <span className="text-[11px] font-mono font-semibold" style={{ color: "var(--amber)" }}>
+                SOLV-001
+              </span>
+            </Link>
             <span className="label">v1.0.0</span>
           </div>
           <div className="flex items-center gap-6 text-[11px] font-mono" style={{ color: "var(--text-3)" }}>

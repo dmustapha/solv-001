@@ -4,10 +4,9 @@ export const maxDuration = 60; // seconds — signal to Vercel; upgrade to Pro f
 import { randomUUID }         from "crypto";
 import { insertTask, listTasks, listTasksByWallet, updateTaskStatus, completeTask, deferTask, rejectTask,
          failTask, getTask, insertTreasuryEvent, getAllTimeStats, getActiveTaskCount,
-         cleanupZombieTasks }  from "@/lib/db";
+         cleanupZombieTasks, checkRateLimitDB }  from "@/lib/db";
 import { build402Response, verifyNanopayment }  from "@/lib/nanopayments-seller";
 import { getAgentWallet } from "@/lib/circle-wallets";
-import { checkRateLimit, pruneExpiredEntries }  from "@/lib/rate-limit";
 import { getUSYCPosition, sweepIdleUSDCtoUSYC, redeemUSYCIfNeeded }  from "@/lib/usyc";
 import { streamTreasuryReasoning, buildReasoningContext } from "@/lib/treasury-reasoning";
 import { executeTask }        from "@/lib/task-execution";
@@ -86,13 +85,12 @@ export async function POST(req: NextRequest): Promise<Response> {
     );
   }
 
-  // Rate limit: 5 task submissions per payer wallet per minute
-  pruneExpiredEntries();
-  const rl = checkRateLimit(`tasks:${payer_wallet}`, { limit: 5, windowMs: 60_000 });
+  // Rate limit: 5 task submissions per payer wallet per minute (DB-backed, works across serverless instances)
+  const rl = await checkRateLimitDB(payer_wallet, { limit: 5, windowMs: 60_000 });
   if (!rl.allowed) {
     return Response.json(
       { error: "Rate limit exceeded. Max 5 tasks per minute per wallet." },
-      { status: 429, headers: { "Retry-After": String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } },
+      { status: 429, headers: { "Retry-After": "60" } },
     );
   }
 

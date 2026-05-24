@@ -227,6 +227,23 @@ export async function getActiveTaskCount(): Promise<number> {
   return parseInt(result.rows[0].cnt, 10);
 }
 
+/** DB-backed rate limit: counts tasks created in the last windowMs for a wallet.
+ *  Works across all serverless instances because it queries shared Postgres state. */
+export async function checkRateLimitDB(
+  payerWallet: string,
+  { limit = 5, windowMs = 60_000 }: { limit?: number; windowMs?: number } = {},
+): Promise<{ allowed: boolean; remaining: number }> {
+  const windowSec = windowMs / 1000;
+  const result = await sql`
+    SELECT COUNT(*)::int AS cnt
+    FROM tasks
+    WHERE payer_wallet = ${payerWallet}
+      AND created_at > NOW() - (${windowSec} * INTERVAL '1 second')
+  `;
+  const cnt = result.rows[0]?.cnt ?? 0;
+  return { allowed: cnt < limit, remaining: Math.max(0, limit - cnt) };
+}
+
 function rowToTask(r: Record<string, unknown>): Task {
   return {
     id:                 r.id as string,

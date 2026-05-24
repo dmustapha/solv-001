@@ -85,16 +85,28 @@ export default function TaskHistoryPanel({ tasks, walletAddress, onTaskClick, gl
   );
 }
 
+function stripMd(text: string): string {
+  return text
+    .replace(/^#{1,6}\s*/gm, "")
+    .replace(/\*{1,2}([^*\n]+)\*{1,2}/g, "$1")
+    .replace(/`[^`\n]*`/g, "")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/^\s*[-*+]\s+/gm, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function TaskRow({ task, index, onClick }: { task: Task; index: number; onClick?: () => void }) {
   const { label: statusLbl, color: dotColor } = getStatusDisplay(task);
   const typeLabel = TASK_LABELS[task.task_type] ?? task.task_type.replace(/_/g, " ");
 
-  // Snippet: prefer result, fall back to non-JSON reasoning
-  const snippet = task.result
-    ? task.result.slice(0, 120)
+  // Snippet: prefer result, fall back to non-JSON reasoning — strip markdown
+  const raw = task.result
+    ? task.result
     : (task.reasoning && !isJsonBlob(task.reasoning))
-      ? task.reasoning.slice(0, 120)
+      ? task.reasoning
       : null;
+  const snippet = raw ? stripMd(raw).slice(0, 130) : null;
 
   return (
     <div

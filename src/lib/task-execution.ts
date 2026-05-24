@@ -390,6 +390,32 @@ Be specific. Reference the selectors/token info. Max 5 sentences per section.`;
 
 // ─── Handler: conditional payment + scheduled disbursement ───────────────────
 
+/** Parses an absolute ISO date or a relative expression ("in 24 hours", "in 2 days", "tomorrow") */
+function parseScheduledDate(text: string): Date | null {
+  // Absolute ISO date
+  const isoMatch = text.match(/(\d{4}-\d{2}-\d{2})/);
+  if (isoMatch) return new Date(isoMatch[1]);
+
+  const now = Date.now();
+  // "in X hour(s)" / "in X day(s)" / "in X week(s)" / "in X minute(s)"
+  const relMatch = text.match(/in\s+(\d+(?:\.\d+)?)\s+(minute|hour|day|week)s?/i);
+  if (relMatch) {
+    const n    = parseFloat(relMatch[1]);
+    const unit = relMatch[2].toLowerCase();
+    const ms   = unit === "minute" ? n * 60_000
+               : unit === "hour"   ? n * 3_600_000
+               : unit === "day"    ? n * 86_400_000
+               :                     n * 604_800_000; // week
+    return new Date(now + ms);
+  }
+  // "tomorrow"
+  if (/\btomorrow\b/i.test(text)) return new Date(now + 86_400_000);
+  // "next week"
+  if (/\bnext\s+week\b/i.test(text)) return new Date(now + 604_800_000);
+
+  return null;
+}
+
 async function executePayment(
   task:      Task,
   sendTrace: TraceSender,
@@ -406,21 +432,21 @@ async function executePayment(
 
   // ── Scheduled disbursement: defer if date has not passed ─────────────────
   if (task.task_type === "scheduled_disbursement") {
-    const dateMatch = task.task.match(/(\d{4}-\d{2}-\d{2})/);
-    if (dateMatch) {
-      const scheduledDate = new Date(dateMatch[1]);
-      if (scheduledDate > new Date()) {
-        const state  = JSON.stringify({ scheduled_date: dateMatch[1], to_address: toAddress, amount });
-        const result = `Scheduled for ${dateMatch[1]}. Daily check active — payment will execute on or after that date.`;
-        await setTaskResult(task.id, result);
-        await deferTask(task.id, state);
-        await emitAndRecord(task.id, { task_id: task.id, type: "result", description: result, timestamp: new Date() }, sendTrace);
-        return { result, cost_usdc: DATA_COST, expense_tx_hashes: [] };
-      }
+    const scheduledDate = parseScheduledDate(task.task);
+    if (scheduledDate && scheduledDate > new Date()) {
+      const isoDate = scheduledDate.toISOString().slice(0, 10);
+      const state   = JSON.stringify({ scheduled_date: isoDate, to_address: toAddress, amount });
+      const result  = `Scheduled for ${isoDate}. Daily check active — payment will execute on or after that date.`;
+      await setTaskResult(task.id, result);
+      await deferTask(task.id, state);
+      await emitAndRecord(task.id, { task_id: task.id, type: "result", description: result, timestamp: new Date() }, sendTrace);
+      return { result, cost_usdc: DATA_COST, expense_tx_hashes: [] };
+    }
+    if (scheduledDate) {
       await emitAndRecord(task.id, {
         task_id:     task.id,
         type:        "result",
-        description: `Scheduled date ${dateMatch[1]} has passed. Proceeding with transfer.`,
+        description: `Scheduled date ${scheduledDate.toISOString().slice(0, 10)} has passed. Proceeding with transfer.`,
         timestamp:   new Date(),
       }, sendTrace);
     }

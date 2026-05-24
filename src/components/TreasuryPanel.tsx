@@ -9,7 +9,7 @@ export default function TreasuryPanel({ treasury }: Props) {
   const pct = (n: number) => `${(n * 100).toFixed(2)}%`;
 
   return (
-    <div className="panel flex flex-col overflow-hidden">
+    <div className="panel flex-1 flex flex-col overflow-hidden">
       {/* Header */}
       <div className="panel-header">
         <span className="label">Treasury</span>

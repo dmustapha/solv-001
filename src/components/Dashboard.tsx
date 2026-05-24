@@ -298,7 +298,11 @@ export default function Dashboard() {
                 fetchTasks();
               }
               if (event.type === "error") {
-                setSubmitError(event.data);
+                const raw = event.data as string;
+                const msg = raw.includes("insufficient_balance")
+                  ? "Insufficient USDC balance on Arc testnet. Get testnet USDC at faucet.circle.com then retry."
+                  : raw;
+                setSubmitError(msg);
                 setUiState("error");
               }
             } catch { /* malformed JSON */ }
@@ -362,6 +366,7 @@ export default function Dashboard() {
             <TaskSubmitForm
               walletAddress={walletAddress}
               isOnArcTestnet={isOnArcTestnet}
+              usdcBalance={usdcBalance}
               uiState={uiState}
               selectedTaskType={selectedTaskType}
               onTaskTypeSelect={handleTaskTypeSelect}

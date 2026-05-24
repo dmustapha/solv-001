@@ -55,7 +55,7 @@ export default function TaskHistoryPanel({ tasks, walletAddress, onTaskClick, gl
       </div>
 
       <div className="flex-1 overflow-y-auto scrollbar-thin">
-        {!walletAddress && (
+        {!walletAddress && !globalView && (
           <div className="flex flex-col items-center justify-center h-full gap-2 py-12 text-center">
             <div className="text-[11px]" style={{ color: "var(--text-3)" }}>
               Connect wallet to see your history

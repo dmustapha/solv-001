@@ -316,7 +316,7 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "var(--bg)" }}>
+    <div className="h-screen flex flex-col overflow-hidden" style={{ background: "var(--bg)" }}>
       <AppNav
         walletAddress={walletAddress}
         usdcBalance={usdcBalance}

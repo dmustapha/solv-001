@@ -58,12 +58,12 @@ export default function StatusPage() {
 
         {/* Treasury — sidebar */}
         <aside
-          className="w-72 shrink-0 border-l flex flex-col p-4 gap-3 overflow-y-auto"
+          className="w-72 shrink-0 border-l flex flex-col overflow-hidden"
           style={{ borderColor: "var(--wire)" }}
         >
           <TreasuryPanel treasury={treasury} />
           {treasuryError && (
-            <p className="text-[11px] px-1" style={{ color: "var(--red)" }}>
+            <p className="text-[11px] px-4 py-2 shrink-0" style={{ color: "var(--red)" }}>
               {treasuryError}
             </p>
           )}

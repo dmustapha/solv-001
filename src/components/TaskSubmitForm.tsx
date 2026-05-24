@@ -162,7 +162,7 @@ export default function TaskSubmitForm({
     const canSubmit = !!(walletAddress && isOnArcTestnet);
 
     return (
-      <div className="flex flex-col gap-6">
+      <div className="flex-1 min-h-0 flex flex-col gap-4">
         <div>
           <h2 className="text-[20px] font-semibold mb-1" style={{ color: "var(--text-1)" }}>
             Select a task
@@ -176,7 +176,7 @@ export default function TaskSubmitForm({
           </p>
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-4 gap-3 flex-1 min-h-0">
           {(Object.keys(TASK_PRICING) as TaskType[]).map((type) => {
             const accent = TASK_ACCENT[type];
             return (
@@ -185,12 +185,11 @@ export default function TaskSubmitForm({
                 type="button"
                 onClick={() => { if (canSubmit) onTaskTypeSelect(type); }}
                 disabled={!canSubmit}
-                className="border p-4 text-left flex flex-col gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                className="border p-4 text-left flex flex-col gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed h-full"
                 style={{
                   background:  "var(--surf)",
                   borderColor: "var(--wire)",
                   borderLeft:  `3px solid ${accent}`,
-                  minHeight:   "88px",
                 }}
                 onMouseEnter={e => {
                   if (canSubmit) {
@@ -206,17 +205,17 @@ export default function TaskSubmitForm({
                 }}
               >
                 <div className="flex items-start justify-between gap-2">
-                  <span className="text-[14px] font-medium leading-snug" style={{ color: "var(--text-1)" }}>
+                  <span className="text-[13px] font-medium leading-snug" style={{ color: "var(--text-1)" }}>
                     {TASK_LABELS[type]}
                   </span>
                   <span
-                    className="text-[13px] font-mono font-semibold shrink-0"
+                    className="text-[12px] font-mono font-semibold shrink-0"
                     style={{ color: "var(--amber)" }}
                   >
                     ${TASK_PRICING[type].price_usdc.toFixed(2)}
                   </span>
                 </div>
-                <span className="text-[12px] leading-snug" style={{ color: "var(--text-2)" }}>
+                <span className="text-[12px] leading-snug flex-1" style={{ color: "var(--text-2)" }}>
                   {TASK_DESCRIPTIONS[type]}
                 </span>
               </button>

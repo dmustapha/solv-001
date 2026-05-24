@@ -1,4 +1,4 @@
-import { getTransactionCount, getNativeBalance, getCode, getLogs, checkChainLive,
+import { getTransactionCount, getCode, getLogs, checkChainLive,
          arcExplorerTxUrl, ethCall } from "./arc-canteen";
 import { executeContractCall, waitForTransactionHash, getAgentWalletBalance } from "./circle-wallets";
 import { insertTraceEvent, insertTreasuryEvent, completeTask, deferTask, rejectTask, setTaskResult } from "./db";
@@ -167,6 +167,8 @@ async function executeWalletIntelligence(
 
   // All Arc + 5 mainnet queries in ONE Promise.allSettled — parallel from t=0.
   // Arc uses fromBlock "0x0" (young chain, safe). Mainnet uses latest-10000 (avoids log caps).
+  // USDC balance uses balanceOf eth_call (6 decimals) — NOT eth_getBalance (native ARC, 18 decimals).
+  const usdcBalSelector = `0x70a08231${paddedAddress.slice(2)}`; // balanceOf(address)
   const allResults = await Promise.allSettled([
     // Arc queries (indices 0-3)
     getTransactionCount(address),
@@ -174,7 +176,7 @@ async function executeWalletIntelligence(
       .then(l => l.slice(0, 500)),
     getLogs({ fromBlock: "0x0", toBlock: "latest", address: ARC_USDC, topics: [TRANSFER_SIG, null, paddedAddress] })
       .then(l => l.slice(0, 500)),
-    getNativeBalance(address),
+    ethCall({ to: ARC_USDC, data: usdcBalSelector }),
     // 5 mainnet chains (indices 4-8)
     ...CHAINS.map(c => fetchChainData(c, address, paddedAddress)),
   ]);
@@ -186,12 +188,12 @@ async function executeWalletIntelligence(
   const txCountArc   = allResults[0].status === "fulfilled" ? (allResults[0].value as number) : 0;
   const sentLogs     = allResults[1].status === "fulfilled" ? (allResults[1].value as LogEntry[]) : [];
   const receivedLogs = allResults[2].status === "fulfilled" ? (allResults[2].value as LogEntry[]) : [];
-  const arcBalance   = allResults[3].status === "fulfilled" ? (allResults[3].value as bigint) : 0n;
+  const usdcBalRaw   = allResults[3].status === "fulfilled" ? (allResults[3].value as string) : "0x";
 
   const decodeUsdc       = (log: LogEntry) => Number(BigInt(log.data)) / 1e6;
   const arcSentTotal     = sentLogs.reduce((s, l) => s + decodeUsdc(l), 0);
   const arcReceivedTotal = receivedLogs.reduce((s, l) => s + decodeUsdc(l), 0);
-  const arcUsdcBal       = Number(arcBalance) / 1e6;
+  const arcUsdcBal       = usdcBalRaw && usdcBalRaw !== "0x" ? Number(BigInt(usdcBalRaw)) / 1e6 : 0;
 
   const counterparties = new Set([
     ...sentLogs.map(l  => "0x" + (l.topics[2] ?? "").slice(26)),
@@ -454,12 +456,19 @@ async function executePayment(
 
   // ── Conditional payment: Claude-parsed condition evaluation ───────────────
   if (task.task_type === "conditional_payment") {
-    const [agentBalance, payerBalanceRaw, chainState] = await Promise.all([
+    const payerUsdcSelector = toAddress
+      ? `0x70a08231${"0".repeat(24)}${toAddress.slice(2).toLowerCase()}`
+      : null;
+    const [agentBalance, payerUsdcRaw, chainState] = await Promise.all([
       getAgentWalletBalance().catch(() => 0),
-      toAddress ? getNativeBalance(toAddress).catch(() => 0n) : Promise.resolve(0n),
+      payerUsdcSelector
+        ? ethCall({ to: ARC_USDC, data: payerUsdcSelector }).catch(() => "0x")
+        : Promise.resolve("0x"),
       checkChainLive().catch(() => ({ blockNumber: 0 })),
     ]);
-    const payerBalance = Number(payerBalanceRaw) / 1e6;
+    const payerBalance = payerUsdcRaw && payerUsdcRaw !== "0x"
+      ? Number(BigInt(payerUsdcRaw)) / 1e6
+      : 0;
     const blockNumber  = chainState.blockNumber;
 
     let conditionMet         = false;
@@ -631,12 +640,14 @@ async function executeGeneralTask(
         : "unavailable"}\n`;
   } catch { /* continue without live data */ }
 
-  // Detect if task mentions an address — inject balance
+  // Detect if task mentions an address — inject USDC ERC-20 balance
   const address = extractAddress(task.task);
   if (address) {
     try {
-      const bal = await getNativeBalance(address).catch(() => 0n);
-      liveContext += `- Queried address ${address} USDC balance: $${(Number(bal) / 1e6).toFixed(4)}\n`;
+      const padded  = `0x70a08231${"0".repeat(24)}${address.slice(2).toLowerCase()}`;
+      const balRaw  = await ethCall({ to: ARC_USDC, data: padded }).catch(() => "0x");
+      const usdcBal = balRaw && balRaw !== "0x" ? Number(BigInt(balRaw)) / 1e6 : 0;
+      liveContext += `- Queried address ${address} USDC balance: $${usdcBal.toFixed(4)}\n`;
     } catch { /* skip */ }
   }
 

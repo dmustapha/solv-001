@@ -88,8 +88,9 @@ export default function StatusPage() {
           <div className="col-span-8 flex flex-col gap-2 overflow-hidden">
             <TaskHistoryPanel
               tasks={tasks}
-              walletAddress={"0x0000000000000000000000000000000000000000"}
-              onTaskClick={() => {/* no-op on status page */}}
+              walletAddress={null}
+              globalView={true}
+              onTaskClick={() => {}}
             />
           </div>
         </div>

@@ -9,8 +9,7 @@ import { TASK_PRICING } from "@/types";
 import type { TaskType, EIP3009Auth } from "@/types";
 import { getMetaMaskProvider } from "@/lib/wallet-provider";
 
-const GATEWAY_WALLET = "0x0077777d7EBA4688BDeF3E311b846F25870A19B9" as const;
-const ARC_USDC       = "0x3600000000000000000000000000000000000000" as const;
+const ARC_USDC = "0x3600000000000000000000000000000000000000" as const;
 
 interface Props {
   walletAddress:    `0x${string}` | null;
@@ -95,34 +94,6 @@ export default function TaskSubmitForm({
     const agentWallet = process.env.NEXT_PUBLIC_AGENT_WALLET_ADDRESS as `0x${string}`;
     const price       = parseUnits(TASK_PRICING[taskType].price_usdc.toFixed(6), 6);
 
-    // ── Ensure the Circle Gateway is approved to pull USDC ─────────────────
-    // Gateway uses transferFrom, so the user must grant it an ERC-20 allowance.
-    // We check allowance server-side (authenticated RPC) to avoid MetaMask's
-    // unreliable Arc Testnet RPC endpoint.
-    const allowanceRes = await fetch(`/api/allowance?owner=${account}`);
-    const { allowance: allowanceHex } = await allowanceRes.json() as { allowance: string };
-
-    if (BigInt(allowanceHex) < price) {
-      const eth         = getMetaMaskProvider()!;
-      const gatewayPad  = GATEWAY_WALLET.toLowerCase().replace("0x", "").padStart(64, "0");
-      const MAX_UINT256 = "f".repeat(64);
-
-      // MetaMask popup: "Approve USDC spending for Circle Gateway"
-      await eth.request({
-        method: "eth_sendTransaction",
-        params: [{ from: account, to: ARC_USDC, data: `0x095ea7b3${gatewayPad}${MAX_UINT256}` }],
-      });
-
-      // Poll server-side until allowance is confirmed on-chain (max 60s)
-      for (let i = 0; i < 30; i++) {
-        await new Promise(r => setTimeout(r, 2000));
-        const poll = await fetch(`/api/allowance?owner=${account}`);
-        const { allowance: updated } = await poll.json() as { allowance: string };
-        if (BigInt(updated) >= price) break;
-      }
-    }
-    // ───────────────────────────────────────────────────────────────────────
-
     const now         = BigInt(Math.floor(Date.now() / 1000));
     const validAfter  = now - 600n;
     const validBefore = now + 604900n;
@@ -130,13 +101,16 @@ export default function TaskSubmitForm({
       (acc, b) => acc + b.toString(16).padStart(2, "0"), "",
     )}` as `0x${string}`;
 
+    // Sign with the USDC contract domain (EIP-3009 transferWithAuthorization).
+    // This is a local signing operation — no network call to Arc Testnet required.
+    // Our server will execute transferWithAuthorization using the expense wallet.
     const signature = await walletClient.signTypedData({
       account,
       domain: {
-        name:              "GatewayWalletBatched",
-        version:           "1",
+        name:              "USDC",
+        version:           "2",
         chainId:           ARC_CHAIN_ID,
-        verifyingContract: GATEWAY_WALLET,
+        verifyingContract: ARC_USDC,
       },
       types: {
         TransferWithAuthorization: [

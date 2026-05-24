@@ -6,6 +6,7 @@ import { insertTask, listTasks, listTasksByWallet, updateTaskStatus, completeTas
          failTask, getTask, insertTreasuryEvent, getAllTimeStats, getActiveTaskCount,
          cleanupZombieTasks, checkRateLimitDB }  from "@/lib/db";
 import { build402Response, verifyNanopayment }  from "@/lib/nanopayments-seller";
+import { settleViaEIP3009 }                      from "@/lib/eip3009-transfer";
 import { getAgentWallet } from "@/lib/circle-wallets";
 import { getUSYCPosition, sweepIdleUSDCtoUSYC, redeemUSYCIfNeeded }  from "@/lib/usyc";
 import { streamTreasuryReasoning, buildReasoningContext } from "@/lib/treasury-reasoning";
@@ -94,9 +95,14 @@ export async function POST(req: NextRequest): Promise<Response> {
     );
   }
 
-  let verification: Awaited<ReturnType<typeof verifyNanopayment>>;
+  // Human-submitted tasks use EIP-3009 transferWithAuthorization directly on the
+  // USDC contract (server signs with expense wallet — no user transaction needed).
+  // A2A agent tasks use Circle Gateway x402 (GatewayClient handles allowances itself).
+  let verification: { verified: boolean; tx_hash?: `0x${string}`; error?: string };
   try {
-    verification = await verifyNanopayment(payment_authorization, agentWalletAddress);
+    verification = client_type === "agent"
+      ? await verifyNanopayment(payment_authorization, agentWalletAddress)
+      : await settleViaEIP3009(payment_authorization);
   } catch {
     return Response.json({ error: "Malformed payment authorization" }, { status: 402 });
   }

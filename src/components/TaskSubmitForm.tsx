@@ -7,8 +7,10 @@ import type { LucideIcon } from "lucide-react";
 import { ARC_CHAIN_ID, TASK_LABELS } from "@/lib/constants";
 import { TASK_PRICING } from "@/types";
 import type { TaskType, EIP3009Auth } from "@/types";
+import { getMetaMaskProvider } from "@/lib/wallet-provider";
 
 const GATEWAY_WALLET = "0x0077777d7EBA4688BDeF3E311b846F25870A19B9" as const;
+const ARC_USDC       = "0x3600000000000000000000000000000000000000" as const;
 
 interface Props {
   walletAddress:    `0x${string}` | null;
@@ -19,15 +21,6 @@ interface Props {
   onTaskTypeSelect: (type: TaskType) => void;
   onSubmit:         (payload: Record<string, unknown>) => void;
   onBack?:          () => void;
-}
-
-type EthProvider = {
-  request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
-};
-
-function getEth(): EthProvider | null {
-  if (typeof window === "undefined") return null;
-  return (window as unknown as { ethereum?: EthProvider }).ethereum ?? null;
 }
 
 
@@ -95,12 +88,41 @@ export default function TaskSubmitForm({
 
   async function buildPaymentAuth(taskType: TaskType): Promise<EIP3009Auth> {
     const walletClient = createWalletClient({
-      transport: custom(getEth()! as Parameters<typeof custom>[0]),
+      transport: custom(getMetaMaskProvider()! as Parameters<typeof custom>[0]),
     });
 
     const [account]   = await walletClient.requestAddresses();
     const agentWallet = process.env.NEXT_PUBLIC_AGENT_WALLET_ADDRESS as `0x${string}`;
     const price       = parseUnits(TASK_PRICING[taskType].price_usdc.toFixed(6), 6);
+
+    // ── Ensure the Circle Gateway is approved to pull USDC ─────────────────
+    // Gateway uses transferFrom, so the user must grant it an ERC-20 allowance.
+    // We check allowance server-side (authenticated RPC) to avoid MetaMask's
+    // unreliable Arc Testnet RPC endpoint.
+    const allowanceRes = await fetch(`/api/allowance?owner=${account}`);
+    const { allowance: allowanceHex } = await allowanceRes.json() as { allowance: string };
+
+    if (BigInt(allowanceHex) < price) {
+      const eth         = getMetaMaskProvider()!;
+      const gatewayPad  = GATEWAY_WALLET.toLowerCase().replace("0x", "").padStart(64, "0");
+      const MAX_UINT256 = "f".repeat(64);
+
+      // MetaMask popup: "Approve USDC spending for Circle Gateway"
+      await eth.request({
+        method: "eth_sendTransaction",
+        params: [{ from: account, to: ARC_USDC, data: `0x095ea7b3${gatewayPad}${MAX_UINT256}` }],
+      });
+
+      // Poll server-side until allowance is confirmed on-chain (max 60s)
+      for (let i = 0; i < 30; i++) {
+        await new Promise(r => setTimeout(r, 2000));
+        const poll = await fetch(`/api/allowance?owner=${account}`);
+        const { allowance: updated } = await poll.json() as { allowance: string };
+        if (BigInt(updated) >= price) break;
+      }
+    }
+    // ───────────────────────────────────────────────────────────────────────
+
     const now         = BigInt(Math.floor(Date.now() / 1000));
     const validAfter  = now - 600n;
     const validBefore = now + 604900n;
@@ -168,7 +190,13 @@ export default function TaskSubmitForm({
       });
       setTask("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Payment signing failed");
+      const raw = err instanceof Error
+        ? err.message
+        : (err as { message?: string })?.message ?? "Payment signing failed";
+      const msg = raw.toLowerCase().includes("rpc") || raw.toLowerCase().includes("endpoint")
+        ? "MetaMask's Arc Testnet RPC is broken. Click 'Switch to Arc Testnet' in the nav to update it, then retry."
+        : raw;
+      setError(msg);
     }
   };
 

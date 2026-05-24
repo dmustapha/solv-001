@@ -1,0 +1,32 @@
+<!-- SOLV-001 Combination Mark — icon + wordmark -->
+<!-- Use in OG images, README, larger brand contexts -->
+<svg width="180" height="40" viewBox="0 0 180 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Icon mark (scaled to 36px height, centered in 40px) -->
+  <g transform="translate(2, 2)">
+    <!-- Outer diamond -->
+    <polygon
+      points="18,1.5 34.5,18 18,34.5 1.5,18"
+      stroke="#E8A010"
+      stroke-width="2"
+      stroke-linejoin="round"
+      fill="none"
+    />
+    <!-- Ticks -->
+    <line x1="18" y1="7"  x2="18" y2="13" stroke="#E8A010" stroke-width="2" stroke-linecap="round"/>
+    <line x1="18" y1="23" x2="18" y2="29" stroke="#E8A010" stroke-width="2" stroke-linecap="round"/>
+    <line x1="7"  y1="18" x2="13" y2="18" stroke="#E8A010" stroke-width="2" stroke-linecap="round"/>
+    <line x1="23" y1="18" x2="29" y2="18" stroke="#E8A010" stroke-width="2" stroke-linecap="round"/>
+    <!-- Center -->
+    <circle cx="18" cy="18" r="3.5" fill="#E8A010"/>
+  </g>
+  <!-- Wordmark — SOLV-001 in mono style -->
+  <text
+    x="50"
+    y="26"
+    font-family="'JetBrains Mono', 'Courier New', monospace"
+    font-weight="600"
+    font-size="17"
+    letter-spacing="3"
+    fill="#E8A010"
+  >SOLV-001</text>
+</svg>

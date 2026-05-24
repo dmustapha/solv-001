@@ -73,8 +73,8 @@ export default function TaskTracePanel({ traceEvents, reasoning, reasoningDecisi
 
       <div className="flex-1 overflow-y-auto px-4 py-3 font-mono text-[11px] scrollbar-thin flex flex-col gap-0.5">
 
-        {/* Empty state */}
-        {isEmpty && (
+        {/* Empty state — idle (no task running) */}
+        {isEmpty && !isActive && (
           <div className="flex flex-col items-center justify-center h-full gap-3 text-center py-12">
             <div
               className="text-[32px] font-mono"
@@ -87,6 +87,20 @@ export default function TaskTracePanel({ traceEvents, reasoning, reasoningDecisi
             </div>
             <div className="text-[10px] font-mono" style={{ color: "var(--text-3)" }}>
               EIP-3009 payment → reasoning → x402 queries → result
+            </div>
+          </div>
+        )}
+
+        {/* Starting indicator — active but no content yet */}
+        {isEmpty && isActive && (
+          <div className="flex flex-col items-center justify-center h-full gap-4 text-center py-12">
+            <div className="flex items-center gap-1.5">
+              <span className="animate-pulse" style={{ animationDelay: "0ms",   fontSize: "18px", color: "var(--amber)", opacity: 0.6 }}>·</span>
+              <span className="animate-pulse" style={{ animationDelay: "200ms", fontSize: "18px", color: "var(--amber)", opacity: 0.6 }}>·</span>
+              <span className="animate-pulse" style={{ animationDelay: "400ms", fontSize: "18px", color: "var(--amber)", opacity: 0.6 }}>·</span>
+            </div>
+            <div className="text-[11px] font-mono" style={{ color: "var(--text-3)" }}>
+              Initializing agent
             </div>
           </div>
         )}
@@ -140,6 +154,15 @@ export default function TaskTracePanel({ traceEvents, reasoning, reasoningDecisi
             index={i}
           />
         ))}
+
+        {/* Working indicator — shown when active and there's content to anchor it */}
+        {isActive && (traceEvents.length > 0 || reasoning) && (
+          <div className="flex items-center gap-1 py-1.5 pl-0.5" style={{ color: "var(--text-3)" }}>
+            <span className="animate-pulse" style={{ animationDelay: "0ms",   fontSize: "10px" }}>·</span>
+            <span className="animate-pulse" style={{ animationDelay: "200ms", fontSize: "10px" }}>·</span>
+            <span className="animate-pulse" style={{ animationDelay: "400ms", fontSize: "10px" }}>·</span>
+          </div>
+        )}
 
         <div ref={bottomRef} />
       </div>

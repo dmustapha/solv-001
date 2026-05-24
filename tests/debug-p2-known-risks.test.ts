@@ -111,22 +111,12 @@ describe("RISK-3: demo_mode:true bypasses payment gate (A-C1)", () => {
     expect(body.payment.method).toBe("x402");
   });
 
-  it("POST /api/tasks with demo_mode:true starts SSE stream (200)", async () => {
-    const res = await fetch(`${BASE}/api/tasks`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        task: "Analyze wallet 0xDEMO010000000000000000000000000000000001",
-        task_type: "wallet_intelligence",
-        payer_wallet: "0xDEMO010000000000000000000000000000000001",
-        demo_mode: true,
-      }),
-    });
-    expect(res.status).toBe(200);
-    expect(res.headers.get("content-type")).toContain("text/event-stream");
+  it.skip("POST /api/tasks with demo_mode:true starts SSE stream (200)", async () => {
+    // demo_mode was removed from production. All tasks require payment_authorization.
+    // Full SSE stream tested in scripts/test-runner-v2.ts (160/160 pass with real payments).
   });
 
-  it("demo_mode SSE stream contains treasury_snapshot event", async () => {
+  it.skip("demo_mode SSE stream contains treasury_snapshot event", async () => {
     const res = await fetch(`${BASE}/api/tasks`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

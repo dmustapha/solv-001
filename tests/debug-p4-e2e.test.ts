@@ -11,7 +11,8 @@ const BASE = "http://localhost:3000";
 // ── E2E Flow 1: Full SSE drain for demo task ──────────────────────────────────
 
 describe("E2E-F1: Full SSE stream — demo task completes", () => {
-  it("contract_summary demo task produces treasury_snapshot + complete events", async () => {
+  it.skip("contract_summary demo task produces treasury_snapshot + complete events", async () => {
+    // demo_mode removed from production. Full SSE flow covered in test-runner-v2.ts (paid tasks).
     const res = await fetch(`${BASE}/api/tasks`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -71,7 +72,8 @@ describe("E2E-F1: Full SSE stream — demo task completes", () => {
     expect(terminal).toBeDefined();
   }, 90000);
 
-  it("general demo task ends with a terminal event", async () => {
+  it.skip("general demo task ends with a terminal event", async () => {
+    // demo_mode removed from production.
     const res = await fetch(`${BASE}/api/tasks`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -137,7 +139,8 @@ describe("E2E-F2: Payment gate → demo bypass flow", () => {
     expect(body.payment.price_usdc).toBeGreaterThan(0);
   });
 
-  it("same task with demo_mode returns SSE stream", async () => {
+  it.skip("same task with demo_mode returns SSE stream", async () => {
+    // demo_mode removed from production.
     const res = await fetch(`${BASE}/api/tasks`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -195,12 +198,12 @@ describe("E2E-F3: data-service demo endpoints return stub data", () => {
     expect(data).toHaveProperty("interaction_count");
   });
 
-  it("token-transfers in demo mode returns usdc_balance", async () => {
+  it("token-transfers returns transfer_count", async () => {
     const res = await fetch(
       `${BASE}/api/data-service/token-transfers?address=0xDEMO010000000000000000000000000000000001&demo=true`
     );
     expect(res.status).toBe(200);
     const data = await res.json();
-    expect(data).toHaveProperty("usdc_balance");
+    expect(data).toHaveProperty("transfer_count");
   });
 });

@@ -23,6 +23,11 @@
     --text-1:    #CDD8E8;
     --text-2:    #7A8CA0;
     --text-3:    #38485A;
+
+    /* ─── Shadow system ──────────────────────────────────────────── */
+    --shadow-amber: 0 0 20px rgba(232,160,16,0.10), 0 0 40px rgba(232,160,16,0.04);
+    --shadow-green: 0 0 16px rgba(0,200,128,0.12);
+    --shadow-panel: 0 2px 16px rgba(0,0,0,0.4);
   }
 
   html, body {
@@ -46,7 +51,7 @@
   .panel {
     background:   var(--surf);
     border:       1px solid var(--wire);
-    border-radius: 2px;
+    border-radius: 4px;
   }
 
   /* Panel header row */
@@ -114,7 +119,7 @@
   .code-block {
     background:    var(--bg);
     border:        1px solid var(--wire);
-    border-radius: 2px;
+    border-radius: 4px;
     padding:       12px 14px;
     font-family:   var(--font-mono), monospace;
     font-size:     11px;
@@ -146,4 +151,144 @@
 /* Ticker pause on hover */
 .ticker-wrap:hover .ticker-track {
   animation-play-state: paused;
+}
+
+/* ─── Focus-visible system ───────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+:focus:not(:focus-visible) { outline: none; }
+
+/* ─── CSS-native interactive classes (replaces JS hover) ──────────── */
+.nav-tab {
+  color: var(--text-2);
+  border-bottom: 2px solid transparent;
+  transition: color 150ms ease;
+  cursor: pointer;
+}
+.nav-tab:hover  { color: var(--text-1); }
+.nav-tab[data-active="true"] {
+  color: var(--amber);
+  border-bottom-color: var(--amber);
+}
+
+.btn-amber {
+  color: var(--amber);
+  border: 1px solid var(--amber);
+  background: transparent;
+  cursor: pointer;
+  transition: background 150ms ease, box-shadow 150ms ease;
+}
+.btn-amber:hover:not(:disabled) { background: rgba(232,160,16,0.08); }
+.btn-amber:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.btn-amber-lg {
+  color: var(--amber);
+  border: 2px solid var(--amber);
+  background: transparent;
+  cursor: pointer;
+  transition: background 150ms ease, box-shadow 150ms ease;
+}
+.btn-amber-lg:hover { background: rgba(232,160,16,0.10); box-shadow: var(--shadow-amber); }
+
+.btn-ghost {
+  color: var(--text-2);
+  border: 1px solid var(--wire);
+  background: transparent;
+  cursor: pointer;
+  transition: color 150ms ease;
+}
+.btn-ghost:hover { color: var(--text-1); }
+
+.card-interactive {
+  transition: background 120ms ease, border-color 120ms ease;
+  cursor: pointer;
+}
+.card-interactive:hover { background: var(--surf-2); }
+
+.link-hover {
+  transition: color 150ms ease;
+}
+.link-hover:hover { color: var(--text-1); }
+.link-hover-blue:hover { color: var(--blue); }
+
+/* ─── Skeleton loading shimmer ───────────────────────────────────── */
+@keyframes skeletonShimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--surf) 0%,
+    var(--surf-2) 50%,
+    var(--surf) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.8s ease-in-out infinite;
+  border-radius: 3px;
+}
+
+/* ─── Cursor blink for streaming text ────────────────────────────── */
+@keyframes blink700 {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+.cursor-blink::after {
+  content: "▋";
+  animation: blink700 700ms step-end infinite;
+  margin-left: 1px;
+  color: var(--amber);
+}
+
+/* ─── Dot grid background for hero sections ─────────────────────── */
+.dot-grid {
+  background-image: radial-gradient(circle, var(--wire) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* ─── SSE progress bar ───────────────────────────────────────────── */
+.progress-track {
+  height: 2px;
+  background: var(--wire);
+  border-radius: 1px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--amber-dim), var(--amber));
+  border-radius: 1px;
+  transition: width 600ms cubic-bezier(0.22,1,0.36,1);
+}
+
+/* ─── Toast notification system ──────────────────────────────────── */
+@keyframes slideInRight {
+  from { transform: translateX(110%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+@keyframes slideOutRight {
+  from { transform: translateX(0);    opacity: 1; }
+  to   { transform: translateX(110%); opacity: 0; }
+}
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  padding: 12px 16px;
+  background: var(--surf-2);
+  border: 1px solid var(--wire-2);
+  border-left: 3px solid var(--amber);
+  border-radius: 4px;
+  animation: slideInRight 300ms cubic-bezier(0.22,1,0.36,1);
+  font-size: 13px;
+  max-width: 320px;
+  z-index: 9999;
+  color: var(--text-1);
+  box-shadow: var(--shadow-panel);
+}
+.toast.toast-error   { border-left-color: var(--red); }
+.toast.toast-success { border-left-color: var(--green); }
+.toast.toast-exit {
+  animation: slideOutRight 250ms ease forwards;
 }

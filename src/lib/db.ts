@@ -114,7 +114,7 @@ export async function getDeferredTasks(): Promise<Task[]> {
 export async function listTasksByWallet(wallet: string, limit = 50): Promise<Task[]> {
   const result = await sql`
     SELECT * FROM tasks
-    WHERE payer_wallet = ${wallet}
+    WHERE LOWER(payer_wallet) = LOWER(${wallet})
     ORDER BY created_at DESC
     LIMIT ${limit}
   `;
@@ -237,7 +237,7 @@ export async function checkRateLimitDB(
   const result = await sql`
     SELECT COUNT(*)::int AS cnt
     FROM tasks
-    WHERE payer_wallet = ${payerWallet}
+    WHERE LOWER(payer_wallet) = LOWER(${payerWallet})
       AND created_at > NOW() - (${windowSec} * INTERVAL '1 second')
   `;
   const cnt = result.rows[0]?.cnt ?? 0;

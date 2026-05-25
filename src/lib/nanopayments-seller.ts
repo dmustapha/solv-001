@@ -112,6 +112,9 @@ export async function verifyNanopayment(
     return { verified: false, error: `Settlement failed: ${settleResult.errorReason ?? "unknown"}` };
   }
 
+  if (!settleResult.transaction) {
+    console.warn("[verifyNanopayment] Circle Gateway settle succeeded but returned no transaction hash. income_tx_hash will be null.");
+  }
   return {
     verified: true,
     tx_hash:  settleResult.transaction as `0x${string}` | undefined,

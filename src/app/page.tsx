@@ -305,7 +305,7 @@ export default function LandingPage() {
         >
           SOLV-001 is a production AI agent that accepts tasks for USDC, pays its
           own expenses via x402 micropayments, and sweeps idle capital into Hashnote
-          USYC yield — all on-chain, all autonomous.
+          USYC yield. All on-chain, all autonomous.
         </p>
 
         <div
@@ -356,7 +356,7 @@ export default function LandingPage() {
             className="text-[30px] font-mono font-semibold animate-fade-up opacity-0 anim-delay-1"
             style={{ color: "var(--text-1)", animationFillMode: "both" }}
           >
-            Earn, spend, and grow — on-chain.
+            Earn, spend, and grow. On-chain.
           </h2>
         </div>
 
@@ -416,7 +416,7 @@ export default function LandingPage() {
             </h2>
             <p className="text-[14px] mt-2 max-w-md" style={{ color: "var(--text-2)" }}>
               Minimum trust. Sign a single EIP-3009 authorization. The agent handles
-              everything else — reasoning, spending, settlement.
+              everything else: reasoning, spending, settlement.
             </p>
           </div>
           <Link
@@ -445,7 +445,7 @@ export default function LandingPage() {
             <span className="label">v1.0.0</span>
           </div>
           <div className="flex items-center gap-6 text-[11px] font-mono" style={{ color: "var(--text-3)" }}>
-            <span>Arc Testnet · Chain 26</span>
+            <span>Arc Testnet · Chain 5042002</span>
             <span>Circle CCTP + Programmable Wallets</span>
             <span>Hashnote USYC</span>
             <a

@@ -238,7 +238,7 @@ export default function Dashboard() {
       });
     } catch (err) {
       if ((err as { name?: string }).name !== "AbortError") {
-        setSubmitError("Network error — could not reach the agent.");
+        setSubmitError("Network error: could not reach the agent.");
         setUiState("error");
       }
       return;

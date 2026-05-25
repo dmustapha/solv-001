@@ -5,7 +5,7 @@ solv-001 is a for-hire AI agent with a live treasury. Pay it USDC to run blockch
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)](https://nextjs.org/)
 [![Circle](https://img.shields.io/badge/Circle-4--Tool_Stack-00D09C)](https://developers.circle.com/)
-[![Tests](https://img.shields.io/badge/tests-160%2F160_passing-brightgreen)]()
+[![Tests](https://img.shields.io/badge/tests-131%2F131_passing-brightgreen)]()
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 **Live:** [solv-001.vercel.app](https://solv-001.vercel.app)
@@ -28,7 +28,7 @@ solv-001 is a for-hire AI agent you call to do specific blockchain work. Send it
 
 Three ways to hire it: connect a browser wallet, call the REST API directly from another agent, or invoke it as an MCP tool from any Claude client. Same reasoning loop, same payment gate, same on-chain settlement every time.
 
-**247 tasks completed. $183.45 earned. All on-chain.**
+**281 tasks completed. $82.25 earned. All on-chain.**
 
 ---
 
@@ -137,7 +137,7 @@ Task submitted
   → EIP-3009 payment verified + settled (Circle x402 Seller)
   → Treasury snapshot: USDC balance + USYC value + pending income + queue depth
   → Claude sonnet-4-6 reads 6 live financial variables
-  → ACCEPT / DEFER / REJECT with plain-English explanation
+  → ACCEPT / DEFER with plain-English explanation
   → Execute task (data queries paid as x402 Nanopayments)
   → Write trace events to Postgres
   → Sweep idle USDC to USYC (Circle Developer-Controlled Wallets + Teller)
@@ -153,11 +153,12 @@ Claude does not follow rules. It reads six live variables and decides:
 | `current_balance_usdc` | Circle Developer-Controlled Wallets API |
 | `usyc_reserve_usdc` | Hashnote Teller contract on Arc |
 | `pending_income_usdc` | NeonDB (active task queue) |
+| `expense_wallet_usdc` | EOA ops wallet balance (pays data query fees) |
 | `task_profit_margin` | `(price - estimated_cost) / price` |
 | `task_priority` | Task type (conditional_payment = 5, general = 2) |
 | `queue_depth` | Active tasks in last 5 minutes |
 
-The model streams its reasoning character-by-character to the dashboard. The final decision is always `ACCEPT`, `DEFER`, or `REJECT` with specific numbers cited.
+The model streams its reasoning character-by-character to the dashboard. The final decision is always `ACCEPT` or `DEFER` with specific numbers cited.
 
 ```
 "Current balance is $19.64 USDC with $8.20 in USYC yield reserves.
@@ -170,11 +171,10 @@ The model streams its reasoning character-by-character to the dashboard. The fin
 ```
 treasury_snapshot    → live financial state (balance, USYC, pending income)
 reasoning_chunk      → streaming Claude output (character-by-character)
-reasoning_complete   → { decision: "ACCEPT"|"DEFER"|"REJECT", explanation }
+reasoning_complete   → { decision: "ACCEPT"|"DEFER", explanation }
 trace                → per-step events (payment received, nanopayment, query, result)
 complete             → { task_id, result, net_usdc }
-deferred             → { task_id, reason }  // balance too low to risk it
-rejected             → { task_id, reason }  // negative margin or invalid task
+deferred             → { task_id, reason }  // balance too low, queue too deep, or ops wallet < $0.50
 ```
 
 ---
@@ -190,8 +190,8 @@ All fees are paid via a single EIP-3009 signature. No gas required from the user
 | Contract Summary | $0.75 | $0.020 | 97% | Bytecode fetch + Claude Haiku analysis |
 | Conditional Payment | $0.20 | $0.005 | 98% | Transfer USDC when a balance condition is met |
 | Scheduled Disbursement | $0.20 | $0.005 | 98% | Transfer USDC at a scheduled date/time |
-| Wallet Watch | $0.10 | $0.040 | 60% | Baseline snapshot + monitoring session |
-| Contract Watch | $0.10 | $0.040 | 60% | Contract event monitoring |
+| Wallet Watch | $0.10 | $0.085 | 15% | Baseline snapshot + monitoring session |
+| Contract Watch | $0.10 | $0.085 | 15% | Contract event monitoring |
 | General Analysis | $0.30 | $0.022 | 93% | Open-ended blockchain research |
 
 ---
@@ -275,9 +275,9 @@ Rate limit: 5 paid tasks per 60-second sliding window per payer wallet.
 
 ## Testing
 
-### Integration Test Suite — 160/160 passing
+### Integration Test Suite — 131 passing
 
-`scripts/test-runner-v2.ts` runs 160 integration tests against the live production API at `https://solv-001.vercel.app`.
+`scripts/test-runner-v2.ts` runs 131 integration tests against the live production API at `https://solv-001.vercel.app`.
 
 Coverage includes:
 
@@ -292,7 +292,7 @@ Coverage includes:
 
 ```bash
 npx tsx scripts/test-runner-v2.ts
-# Result: 160/160 passing
+# Result: 131/131 passing
 ```
 
 ### Unit and E2E Tests — 54 passing, 6 skipped
@@ -347,7 +347,7 @@ Income settlement IDs are Circle batch UUIDs, not individual 0x hashes. `Gateway
 4. Select a task type. Try **Contract Summary** or **Wallet Intelligence**.
 5. Enter a task prompt, for example:
    `Summarize the USYC teller contract at 0x9fdF14c5B14173D74C08Af27AebFf39240dC105A`
-6. Click **Run task** and sign the EIP-3009 payment authorization in your wallet. No gas required.
+6. Click **Run task** and sign the EIP-3009 payment authorization in your wallet. No gas required. If MetaMask is unavailable, click **Demo mode** to use the pre-funded test wallet instead.
 7. Watch the SSE stream: treasury snapshot loads, Claude reasons over the live balance, data queries fire as nanopayments, result appears.
 
 The full stream takes 15-30 seconds. After it completes, the result and net USDC appears on the dashboard.
@@ -374,6 +374,7 @@ The full stream takes 15-30 seconds. After it completes, the result and net USDC
 | `GET` | `/api/tasks/:id` | Get a single task with trace events. |
 | `GET` | `/api/agent-card` | Machine-readable capability manifest for A2A discovery. |
 | `POST` | `/api/mcp` | MCP endpoint (HTTP-SSE). Tools: `run_task`, `get_treasury_status`, `estimate_task`. |
+| `POST` | `/api/sign-demo` | Server-side EIP-3009 signer for demo mode (no MetaMask required). |
 | `GET` | `/api/data-service/transaction-count` | x402-gated: Arc transaction count for an address. |
 | `GET` | `/api/data-service/contract-interactions` | x402-gated: Contract interaction count (via `eth_getLogs`). |
 | `GET` | `/api/data-service/token-transfers` | x402-gated: USDC transfer count for an address. |
@@ -444,6 +445,7 @@ solv-001/
 │   │       ├── treasury/route.ts     # Live treasury state
 │   │       ├── agent-card/route.ts   # A2A capability manifest
 │   │       ├── mcp/route.ts          # MCP endpoint (3 tools)
+│   │       ├── sign-demo/route.ts    # Server-side EIP-3009 signer for demo mode
 │   │       └── data-service/         # x402-gated data endpoints
 │   ├── components/
 │   │   ├── Dashboard.tsx             # Main dashboard component

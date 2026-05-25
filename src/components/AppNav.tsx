@@ -7,7 +7,6 @@ import SolvLogo from "@/components/SolvLogo";
 const NAV_TABS = [
   { label: "Dashboard", href: "/dashboard" },
   { label: "Status",    href: "/status" },
-  { label: "Proof",     href: "/proof" },
 ];
 
 interface Props {

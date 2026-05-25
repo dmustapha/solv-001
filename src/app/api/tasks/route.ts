@@ -115,6 +115,11 @@ export async function POST(req: NextRequest): Promise<Response> {
   }
   const income_tx_hash = verification.tx_hash;
 
+  // Non-blocking balance trace — logs after every payment for treasury cross-check
+  getAgentWallet().then(w => {
+    console.info(`[treasury] Income settled. Circle wallet balance: $${w.usdc_balance.toFixed(4)} USDC`);
+  }).catch(() => { /* non-critical */ });
+
   // ── Create task record ────────────────────────────────────────────────────
   const taskId = randomUUID();
   await insertTask({

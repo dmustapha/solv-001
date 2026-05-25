@@ -17,7 +17,7 @@ const TICKER_ITEMS = [
   { label: "RUNTIME", value: "24/7 Autonomous" },
   { label: "SETTLEMENT", value: "On-Chain" },
   { label: "CURRENCY", value: "USDC" },
-  { label: "CHAIN ID", value: "5042002 — ARC" },
+  { label: "CHAIN ID", value: "5042002" },
 ];
 
 /* ─── Flow cards ─────────────────────────────────────────────────────────── */
@@ -33,6 +33,7 @@ USDC.transferWithAuthorization(
   from:        payer,
   to:          agent_wallet,
   value:       task_price,
+  validAfter:  0,
   validBefore: deadline,
   nonce:       bytes32,
   signature:   sig          // EIP-712
@@ -174,9 +175,17 @@ export default function LandingPage() {
   const [pricingRef, pricingInViewRaw] = useInView<HTMLDivElement>();
   // Fallback: reveal pricing rows after 2.5s even if user never scrolls
   const [pricingForced, setPricingForced] = useState(false);
+  const [treasury, setTreasury] = useState<{
+    usdc_balance: number;
+    today_income_usdc: number;
+    total_income_all_time_usdc: number;
+  } | null>(null);
   useEffect(() => {
     const t = setTimeout(() => setPricingForced(true), 2500);
     return () => clearTimeout(t);
+  }, []);
+  useEffect(() => {
+    fetch("/api/treasury").then(r => r.json()).then(setTreasury).catch(() => {});
   }, []);
   const pricingInView = pricingInViewRaw || pricingForced;
 
@@ -334,10 +343,10 @@ export default function LandingPage() {
         style={{ borderColor: "var(--wire)", background: "var(--surf)" }}
       >
         <div className="max-w-5xl mx-auto px-8 py-12 grid grid-cols-2 md:grid-cols-4 gap-8">
-          <StatBox label="Tasks Completed"   value={247}    delay={0}   />
-          <StatBox label="Total Income"      value={183.45} suffix="$"  decimals={2} delay={100} />
-          <StatBox label="USYC Position"     value={94.20}  suffix="$"  decimals={2} delay={200} />
-          <StatBox label="Avg Margin"        value={94}     suffix="%" decimals={0} delay={300} after />
+          <StatBox label="Treasury Balance"  value={treasury?.usdc_balance              ?? 0} suffix="$" decimals={2} delay={0}   />
+          <StatBox label="Total Earned"      value={treasury?.total_income_all_time_usdc ?? 0} suffix="$" decimals={2} delay={100} />
+          <StatBox label="Today's Income"    value={treasury?.today_income_usdc          ?? 0} suffix="$" decimals={2} delay={200} />
+          <StatBox label="Task Types"        value={Object.keys(TASK_PRICING).length}                                  delay={300} />
         </div>
       </section>
 
@@ -444,7 +453,7 @@ export default function LandingPage() {
           </div>
           <div className="flex items-center gap-6 text-[11px] font-mono" style={{ color: "var(--text-3)" }}>
             <span>Arc Testnet · Chain 5042002</span>
-            <span>Circle CCTP + Programmable Wallets</span>
+            <span>Circle Gateway + Programmable Wallets</span>
             <span>Hashnote USYC</span>
             <a
               href="https://github.com/dmustapha/solv-001"

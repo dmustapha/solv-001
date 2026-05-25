@@ -14,7 +14,6 @@ const TICKER_ITEMS = [
   { label: "PAYMENT", value: "EIP-3009" },
   { label: "EXPENSES", value: "x402" },
   { label: "YIELD", value: "USYC / Hashnote" },
-  { label: "STACK", value: "Circle 4-Tool" },
   { label: "RUNTIME", value: "24/7 Autonomous" },
   { label: "SETTLEMENT", value: "On-Chain" },
   { label: "CURRENCY", value: "USDC" },
@@ -226,7 +225,6 @@ export default function LandingPage() {
         </div>
 
         <div className="flex items-center gap-4">
-          <span className="label hidden md:block">Circle 4-Tool Stack</span>
           <div className="hidden sm:flex items-center gap-1.5">
             <span
               className="w-1.5 h-1.5 rounded-full animate-pulse-dot"

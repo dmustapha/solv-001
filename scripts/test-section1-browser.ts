@@ -85,8 +85,22 @@ async function injectMockEthereum(page: Page, opts: {
       const _usdcHex    = ${JSON.stringify(usdcHex)};
       const _signedAuth = ${JSON.stringify(signedAuth)};
 
+      // EIP-1193 event emitter (wagmi calls .on() immediately on provider detection)
+      const _listeners = {};
       window.ethereum = {
         isMetaMask: true,
+        on: function(event, cb) {
+          if (!_listeners[event]) _listeners[event] = [];
+          _listeners[event].push(cb);
+        },
+        removeListener: function(event, cb) {
+          if (_listeners[event]) _listeners[event] = _listeners[event].filter(function(l) { return l !== cb; });
+        },
+        off: function(event, cb) { this.removeListener(event, cb); },
+        emit: function(event) {
+          var args = Array.prototype.slice.call(arguments, 1);
+          if (_listeners[event]) _listeners[event].forEach(function(cb) { cb.apply(null, args); });
+        },
         request: async function({ method, params }) {
           switch (method) {
             case "eth_requestAccounts": return [_address];
@@ -95,9 +109,11 @@ async function injectMockEthereum(page: Page, opts: {
             case "eth_call":            return _usdcHex;
             case "wallet_switchEthereumChain":
               currentChain = (params && params[0]) ? params[0].chainId : currentChain;
+              this.emit("chainChanged", currentChain);
               return null;
             case "wallet_addEthereumChain":
               currentChain = (params && params[0]) ? params[0].chainId : currentChain;
+              this.emit("chainChanged", currentChain);
               return null;
             case "eth_signTypedData_v4":
             case "eth_signTypedData":
@@ -189,51 +205,53 @@ async function runSection1() {
     {
       const ctx  = await browser.newContext();
       const page = await ctx.newPage();
-      await injectMockEthereum(page, { chainId: "correct", address: account.address, usdcBalance: 12.50 });
+      await injectMockEthereum(page, { chainId: "correct", address: account.address });
+      await page.goto(APP_URL, { waitUntil: "networkidle" });
+
+      const connectBtn = page.locator("button", { hasText: /connect wallet/i });
+      if (await connectBtn.isVisible().catch(() => false)) await connectBtn.click();
+      await page.waitForTimeout(2500); // allow /api/balance round-trip
+
+      // Balance is fetched from real Arc RPC via /api/balance — look for any $X.XX amount in AppNav
+      const bodyText   = await page.textContent("body") ?? "";
+      const hasBalance = /\$\d+\.\d{2}/.test(bodyText);
+      log("H1.4-balance", hasBalance, `USDC balance visible (any $X.XX): ${hasBalance} | body snippet: "${bodyText.slice(0, 200).replace(/\s+/g, " ")}"`);
+
+      // Balance span uses amber CSS var — check it exists (not green)
+      const balSpan = page.locator("span.font-mono.font-medium").first();
+      const balText = await balSpan.textContent().catch(() => "");
+      log("H1.4-amber", balText?.startsWith("$") ?? false, `Balance span text: "${balText}"`);
+      await ctx.close();
+    }
+
+    // ── H1.5: Task type card is clickable after wallet connect → composing state ─
+    console.log("\n── H1.5: Task type card click → composing state ──");
+    {
+      const ctx  = await browser.newContext();
+      const page = await ctx.newPage();
+      await injectMockEthereum(page, { chainId: "correct", address: account.address });
       await page.goto(APP_URL, { waitUntil: "networkidle" });
 
       const connectBtn = page.locator("button", { hasText: /connect wallet/i });
       if (await connectBtn.isVisible().catch(() => false)) await connectBtn.click();
       await page.waitForTimeout(1500);
 
-      // Look for the balance display ($12.50 or similar)
-      const bodyText = await page.textContent("body") ?? "";
-      const hasBalance = bodyText.includes("12.50") || bodyText.includes("12.5");
-      log("H1.4-balance", hasBalance, `USDC balance visible (looking for "12.50"): ${hasBalance}`);
+      // Wait for task type cards to become enabled (canSubmit = walletAddress && isOnArcTestnet)
+      const cardEnabled = await page.waitForSelector("button:not([disabled]):has-text('Contract Summary')", { timeout: 5000 }).then(() => true).catch(() => false);
+      log("H1.5-cards-enabled", cardEnabled, `Task type cards enabled after connect: ${cardEnabled}`);
 
-      // Balance should be green (enough funds)
-      const greenBal = await page.locator(`span:has-text("12.50"), span:has-text("12.5")`).getAttribute("style").catch(() => "");
-      log("H1.4-color", greenBal?.includes("green") ?? false, `balance color style: ${greenBal?.slice(0,60)}`);
-      await ctx.close();
-    }
-
-    // ── H1.5: Estimate button ────────────────────────────────────────────────
-    console.log("\n── H1.5: Estimate button ──");
-    {
-      const ctx  = await browser.newContext();
-      const page = await ctx.newPage();
-      await injectMockEthereum(page, { chainId: "correct", address: account.address, usdcBalance: 5.00 });
-      await page.goto(APP_URL, { waitUntil: "networkidle" });
-
-      const connectBtn = page.locator("button", { hasText: /connect wallet/i });
-      if (await connectBtn.isVisible().catch(() => false)) await connectBtn.click();
-      await page.waitForTimeout(1000);
-
-      const estimateBtn = page.locator("button", { hasText: /get estimate/i });
-      const estVisible  = await estimateBtn.isVisible().catch(() => false);
-      log("H1.5-btn", estVisible, `"Get estimate" button visible=${estVisible}`);
-
-      if (estVisible) {
-        await estimateBtn.click();
-        await page.waitForTimeout(2000);
-        const bodyText  = await page.textContent("body") ?? "";
-        const hasMargin = /margin/i.test(bodyText) || /\d+%/.test(bodyText);
-        log("H1.5-result", hasMargin, `Margin % shown after click: ${hasMargin}`);
+      if (cardEnabled) {
+        await page.locator("button", { hasText: /contract summary/i }).first().click();
+        await page.waitForTimeout(800);
+        const textarea = page.locator("textarea");
+        const textareaVisible = await textarea.isVisible().catch(() => false);
+        log("H1.5-composing", textareaVisible, `Composing state (textarea) appears after card click: ${textareaVisible}`);
       }
       await ctx.close();
     }
 
-    // ── H1.14: Char count limit ──────────────────────────────────────────────
+    // ── H1.14: Char count display and 2000-char limit ───────────────────────
+    // Note: counter only renders when task.length > 1000 (not from 0)
     console.log("\n── H1.14: Char count display and 2000-char limit ──");
     {
       const ctx  = await browser.newContext();
@@ -243,67 +261,71 @@ async function runSection1() {
 
       const connectBtn = page.locator("button", { hasText: /connect wallet/i });
       if (await connectBtn.isVisible().catch(() => false)) await connectBtn.click();
-      await page.waitForTimeout(500);
+      await page.waitForTimeout(1500);
+
+      // Click a task card to enter composing state (textarea only shown in composing)
+      const cardEnabled = await page.waitForSelector("button:not([disabled]):has-text('Contract Summary')", { timeout: 5000 }).then(() => true).catch(() => false);
+      if (cardEnabled) {
+        await page.locator("button", { hasText: /contract summary/i }).first().click();
+        await page.waitForTimeout(800);
+      }
 
       const textarea = page.locator("textarea");
       if (await textarea.isVisible().catch(() => false)) {
-        // Type 100 chars
-        await textarea.fill("A".repeat(100));
+        // maxLength=2000 attribute
+        const maxLen = await textarea.getAttribute("maxlength");
+        log("H1.14-maxlength", maxLen === "2000", `maxlength attribute=${maxLen}`);
+
+        // Counter only appears when task.length > 1000
+        await textarea.fill("A".repeat(1001));
         await page.waitForTimeout(200);
         const bodyText = await page.textContent("body") ?? "";
-        const hasCounter = bodyText.includes("100/2000");
-        log("H1.14-counter", hasCounter, `Char counter shows 100/2000: ${hasCounter}`);
+        const hasCounter = /1001\/2000/.test(bodyText) || /\d+\/2000/.test(bodyText);
+        log("H1.14-counter", hasCounter, `Char counter visible at 1001 chars: ${hasCounter}`);
 
-        // Type 1900 chars
+        // Near-limit (1900) counter should be visible
         await textarea.fill("A".repeat(1900));
         await page.waitForTimeout(200);
         const bodyText2 = await page.textContent("body") ?? "";
-        const hasAmber = bodyText2.includes("1900/2000");
-        log("H1.14-amber", hasAmber, `Char counter shows 1900/2000 (amber threshold): ${hasAmber}`);
-
-        // maxLength=2000 prevents typing beyond
-        const maxLen = await textarea.getAttribute("maxlength");
-        log("H1.14-maxlength", maxLen === "2000", `maxlength attribute=${maxLen}`);
+        const has1900 = bodyText2.includes("1900/2000");
+        log("H1.14-nearlimit", has1900, `Counter shows 1900/2000: ${has1900}`);
       } else {
-        log("H1.14", false, "Textarea not visible");
+        log("H1.14", false, "Textarea not visible after card click");
       }
       await ctx.close();
     }
 
-    // ── H1.15: Task type switch resets estimate ──────────────────────────────
-    console.log("\n── H1.15: Task type switch resets estimate ──");
+    // ── H1.15: Back button returns to idle card grid ─────────────────────────
+    console.log("\n── H1.15: Back button returns from composing to idle card grid ──");
     {
       const ctx  = await browser.newContext();
       const page = await ctx.newPage();
-      await injectMockEthereum(page, { chainId: "correct", address: account.address, usdcBalance: 5.00 });
+      await injectMockEthereum(page, { chainId: "correct", address: account.address });
       await page.goto(APP_URL, { waitUntil: "networkidle" });
 
       const connectBtn = page.locator("button", { hasText: /connect wallet/i });
       if (await connectBtn.isVisible().catch(() => false)) await connectBtn.click();
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(1500);
 
-      // Get estimate for contract_summary
-      const estimateBtn = page.locator("button", { hasText: /get estimate/i });
-      if (await estimateBtn.isVisible().catch(() => false)) {
-        await estimateBtn.click();
-        await page.waitForTimeout(2000);
-        const before = await page.textContent("body") ?? "";
-        const hadMargin = /margin/i.test(before);
+      const cardEnabled = await page.waitForSelector("button:not([disabled]):has-text('Contract Summary')", { timeout: 5000 }).then(() => true).catch(() => false);
+      if (cardEnabled) {
+        await page.locator("button", { hasText: /contract summary/i }).first().click();
+        await page.waitForTimeout(800);
 
-        // Switch task type to general
-        const select = page.locator("select");
-        if (await select.isVisible().catch(() => false)) {
-          await select.selectOption({ value: "general" });
-          await page.waitForTimeout(300);
-          const after = await page.textContent("body") ?? "";
-          // "Agent margin" text should be gone after type change
-          const marginGone = !/agent margin/i.test(after);
-          log("H1.15", hadMargin && marginGone, `Estimate shown before=${hadMargin}, cleared after type change=${marginGone}`);
-        } else {
-          log("H1.15", false, "Select not visible");
+        // In composing state — click ← Back
+        const backBtn = page.locator("button", { hasText: /← Back|back/i });
+        const backVisible = await backBtn.isVisible().catch(() => false);
+        log("H1.15-back-btn", backVisible, `"← Back" button visible in composing state: ${backVisible}`);
+
+        if (backVisible) {
+          await backBtn.click();
+          await page.waitForTimeout(500);
+          // Should return to idle grid — task cards visible again
+          const cardAgain = await page.locator("button", { hasText: /contract summary/i }).first().isVisible().catch(() => false);
+          log("H1.15-idle-restored", cardAgain, `Idle card grid restored after Back: ${cardAgain}`);
         }
       } else {
-        log("H1.15", false, "Estimate button not visible");
+        log("H1.15", false, "Cards not enabled after connect");
       }
       await ctx.close();
     }
@@ -373,24 +395,24 @@ async function runSection1() {
       const connectBtn = page.locator("button", { hasText: /connect wallet/i });
       if (await connectBtn.isVisible().catch(() => false)) {
         await connectBtn.click();
-        await page.waitForTimeout(1000);
+        await page.waitForTimeout(1500);
       }
 
-      // Select task type
-      const select = page.locator("select");
-      if (await select.isVisible().catch(() => false)) {
-        await select.selectOption({ value: type });
-        await page.waitForTimeout(300);
+      // Select task type — UI uses card grid, not <select>. Wait for cards to become enabled.
+      const cardEnabled = await page.waitForSelector(`button:not([disabled]):has-text('${label.split(" ")[0]}')`, { timeout: 5000 }).then(() => true).catch(() => false);
+      if (cardEnabled) {
+        await page.locator("button", { hasText: new RegExp(label.split(" ").slice(0, 2).join("\\s+"), "i") }).first().click();
+        await page.waitForTimeout(800); // wait for composing state
       }
 
-      // Fill task description
+      // Fill task description — textarea appears in composing state
       const textarea = page.locator("textarea");
       if (await textarea.isVisible().catch(() => false)) {
         await textarea.fill(task);
         await page.waitForTimeout(200);
       }
 
-      // Check price badge shows correct price
+      // Check price badge shows correct price (shown in composing state header)
       const bodyText  = await page.textContent("body") ?? "";
       const priceShown = bodyText.includes(`$${price.toFixed(2)}`);
       log(`${id}-price`, priceShown, `Price badge shows $${price.toFixed(2)}: ${priceShown}`);

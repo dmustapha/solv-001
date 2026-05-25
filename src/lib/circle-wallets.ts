@@ -90,6 +90,25 @@ export async function transferUSDC(params: {
   return response.data!.id!;
 }
 
+// ─── Ops wallet top-up ────────────────────────────────────────────────────────
+// Keeps the expense EOA funded for Nanopayment data query fees.
+// Called after each task completion. Non-critical — failure is logged, not thrown.
+
+export async function topUpExpenseWallet(): Promise<void> {
+  const { getExpenseBalance } = await import("@/lib/nanopayments-buyer");
+  const { insertTreasuryEvent } = await import("@/lib/db");
+
+  const expenseAddr = process.env.EXPENSE_WALLET_ADDRESS;
+  if (!expenseAddr) return; // env not configured — skip silently
+
+  const { usdc } = await getExpenseBalance();
+  if (usdc >= 2) return; // funded — no action needed
+
+  const txId = await transferUSDC({ toAddress: expenseAddr, amountUsdc: 5 });
+  await insertTreasuryEvent({ type: "ops_topup", amount_usdc: 5, tx_hash: txId });
+  console.info(`[treasury] Ops top-up: transferred $5 USDC to expense wallet (tx: ${txId})`);
+}
+
 // ─── Wait for transaction confirmation ───────────────────────────────────────
 
 export async function waitForTransactionHash(txId: string): Promise<`0x${string}` | null> {

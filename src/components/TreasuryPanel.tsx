@@ -78,7 +78,34 @@ export default function TreasuryPanel({ treasury }: Props) {
                 {pct(treasury.usyc_apy)} APY
               </span>
             </div>
+            {treasury.usyc_status === "pending" && (
+              <div className="text-[10px] mt-1" style={{ color: "var(--text-3)" }}>
+                Pending Circle approval
+              </div>
+            )}
           </div>
+
+          {/* Ops wallet */}
+          {treasury.expense_wallet_address && (
+            <div className="mb-4 pt-3 border-t" style={{ borderColor: "var(--wire)" }}>
+              <div className="label mb-1.5">Ops Wallet</div>
+              <div
+                className="text-[18px] leading-none font-mono font-semibold"
+                style={{ color: "var(--blue)" }}
+              >
+                ${fmt(treasury.expense_wallet_usdc)}
+              </div>
+              <a
+                href={`${ARC_EXPLORER_URL}/address/${treasury.expense_wallet_address}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[10px] font-mono mt-1 block link-hover link-hover-blue"
+                style={{ color: "var(--text-3)" }}
+              >
+                {treasury.expense_wallet_address.slice(0, 10)}…{treasury.expense_wallet_address.slice(-6)} ↗
+              </a>
+            </div>
+          )}
 
           {/* Pending income */}
           <div
@@ -111,8 +138,11 @@ export default function TreasuryPanel({ treasury }: Props) {
           {/* All-time */}
           <div className="mt-3 pt-3 border-t" style={{ borderColor: "var(--wire)" }}>
             <div className="flex flex-col gap-1.5">
-              <Row label="Tasks completed" value={String(treasury.total_tasks_completed)}           color="var(--text-1)" />
-              <Row label="All-time income"  value={`$${fmt(treasury.total_income_all_time_usdc)}`}  color="var(--text-1)" />
+              <Row label="Tasks completed"         value={String(treasury.total_tasks_completed)}          color="var(--text-1)" />
+              <Row label="All-time income"          value={`$${fmt(treasury.total_income_all_time_usdc)}`} color="var(--text-1)" />
+              {treasury.total_contributions_usdc > 0 && (
+                <Row label="Ecosystem contributions" value={`$${fmt(treasury.total_contributions_usdc)}`} color="var(--green)" />
+              )}
             </div>
           </div>
 

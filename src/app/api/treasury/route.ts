@@ -1,6 +1,7 @@
 import { getAgentWallet }          from "@/lib/circle-wallets";
-import { getUSYCPosition }         from "@/lib/usyc";
+import { getUSYCPosition, getUsycStatus } from "@/lib/usyc";
 import { getTodayStats, getAllTimeStats } from "@/lib/db";
+import { getExpenseBalance }       from "@/lib/nanopayments-buyer";
 import type { TreasuryState }      from "@/types";
 import { OPERATING_RESERVE_USDC }  from "@/types";
 
@@ -19,9 +20,10 @@ export async function GET(): Promise<Response> {
     // USYC RPC may be unavailable; return zeros
   }
 
-  const [today, allTime] = await Promise.all([
+  const [today, allTime, expenseBalance] = await Promise.all([
     getTodayStats(),
     getAllTimeStats(),
+    getExpenseBalance().catch(() => ({ usdc: 0 })),
   ]);
 
   const state: TreasuryState = {
@@ -29,6 +31,7 @@ export async function GET(): Promise<Response> {
     usyc_balance:               parseFloat(usycPosition.usyc_balance.toString()) / 1e18,
     usyc_usdc_value:            usycPosition.usdc_value,
     usyc_apy:                   usycPosition.apy,
+    usyc_status:                getUsycStatus(),
     pending_income_usdc:        allTime.pending_income,
     today_income_usdc:          today.income,
     today_expense_usdc:         today.expense,
@@ -36,6 +39,9 @@ export async function GET(): Promise<Response> {
     operating_reserve_usdc:     OPERATING_RESERVE_USDC,
     total_tasks_completed:      allTime.total_completed,
     total_income_all_time_usdc: allTime.total_income,
+    total_contributions_usdc:   allTime.total_contributions,
+    expense_wallet_address:     process.env.EXPENSE_WALLET_ADDRESS ?? "",
+    expense_wallet_usdc:        expenseBalance.usdc,
     last_updated:               new Date(),
   };
 

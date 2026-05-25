@@ -52,6 +52,7 @@ export interface Task {
   client_type: ClientType;
   income_tx_hash: `0x${string}` | null;
   expense_tx_hashes: `0x${string}`[];
+  callback_url: string | null;
   created_at: Date;
   completed_at: Date | null;
 }
@@ -61,6 +62,7 @@ export interface TreasuryState {
   usyc_balance: number;
   usyc_usdc_value: number;
   usyc_apy: number;
+  usyc_status: "active" | "pending";
   pending_income_usdc: number;
   today_income_usdc: number;
   today_expense_usdc: number;
@@ -68,6 +70,9 @@ export interface TreasuryState {
   operating_reserve_usdc: number;
   total_tasks_completed: number;
   total_income_all_time_usdc: number;
+  total_contributions_usdc: number;
+  expense_wallet_address: string;
+  expense_wallet_usdc: number;
   last_updated: Date;
 }
 
@@ -90,6 +95,7 @@ export interface ReasoningContext {
   usyc_reserve_usdc: number;
   pending_income_usdc: number;
   operating_reserve_usdc: number;
+  expense_wallet_usdc: number;
   task_price_usdc: number;
   estimated_execution_cost_usdc: number;
   task_profit_margin: number;
@@ -99,9 +105,11 @@ export interface ReasoningContext {
 }
 
 export interface ReasoningDecision {
-  decision: "ACCEPT" | "DEFER" | "REJECT";
+  decision: "ACCEPT" | "DEFER";
   explanation: string;
   reasoning_tokens: number;
+  sweep_usdc: number;            // amount to move to USYC (0 if none)
+  contribution_rate: number;     // 0 | 0.005 | 0.01 | 0.02
 }
 
 export interface TraceEvent {
@@ -163,8 +171,8 @@ export const TASK_PRICING: Record<TaskType, { price_usdc: number; estimated_cost
   contract_summary:        { price_usdc: 0.75, estimated_cost_usdc: 0.020 },
   conditional_payment:     { price_usdc: 0.20, estimated_cost_usdc: 0.005 },
   scheduled_disbursement:  { price_usdc: 0.20, estimated_cost_usdc: 0.005 },
-  wallet_watch:            { price_usdc: 0.10, estimated_cost_usdc: 0.040 },  // $0.04/hr ongoing
-  contract_watch:          { price_usdc: 0.10, estimated_cost_usdc: 0.040 },
+  wallet_watch:            { price_usdc: 0.10, estimated_cost_usdc: 0.085 },  // 15% margin; grows across cron cycles
+  contract_watch:          { price_usdc: 0.10, estimated_cost_usdc: 0.085 },
   general:                 { price_usdc: 0.30, estimated_cost_usdc: 0.022 },
 };
 

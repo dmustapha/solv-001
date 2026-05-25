@@ -7,6 +7,15 @@ const TRANSFER_SIG = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4d
 
 const DATA_COST = 0.005;
 
+function fireCallback(url: string | null | undefined, task_id: string, result: string): void {
+  if (!url) return;
+  fetch(url, {
+    method:  "POST",
+    headers: { "Content-Type": "application/json" },
+    body:    JSON.stringify({ task_id, result, status: "complete" }),
+  }).catch(() => {/* callback failure is non-critical */});
+}
+
 export async function GET(req: Request): Promise<Response> {
   // Verify Vercel cron authorization
   if (req.headers.get("Authorization") !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -42,6 +51,7 @@ export async function GET(req: Request): Promise<Response> {
             expense_tx_hashes: expense_tx_hashes as string[],
           });
           results.push({ id: task.id, action: "completed", result });
+          fireCallback(task.callback_url, task.id, result);
         }
         // else: not yet — leave deferred
       }
@@ -77,6 +87,7 @@ export async function GET(req: Request): Promise<Response> {
             expense_tx_hashes: [],
           });
           results.push({ id: task.id, action: "completed", result });
+          fireCallback(task.callback_url, task.id, result);
         }
         // else: no change — leave deferred until next cron run
       }
@@ -100,6 +111,7 @@ export async function GET(req: Request): Promise<Response> {
             expense_tx_hashes: [],
           });
           results.push({ id: task.id, action: "completed", result });
+          fireCallback(task.callback_url, task.id, result);
         }
         // else: no events — leave deferred
       }

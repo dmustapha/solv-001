@@ -18,9 +18,12 @@ import type { Task, TaskStatus, TaskType, TraceEvent } from "@/types";
 //   client_type       TEXT NOT NULL DEFAULT 'human',
 //   income_tx_hash    TEXT,
 //   expense_tx_hashes TEXT[] NOT NULL DEFAULT '{}',
+//   callback_url      TEXT,
 //   created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
 //   completed_at      TIMESTAMPTZ
 // );
+// Migration (if tasks table already exists):
+//   ALTER TABLE tasks ADD COLUMN IF NOT EXISTS callback_url TEXT;
 //
 // CREATE TABLE IF NOT EXISTS treasury_events (
 //   id          TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
@@ -48,11 +51,12 @@ export async function insertTask(params: {
   payer_wallet: string;
   income_usdc: number;
   client_type: "human" | "agent";
+  callback_url?: string;
 }): Promise<void> {
   await sql`
-    INSERT INTO tasks (id, task, task_type, payer_wallet, status, income_usdc, client_type)
+    INSERT INTO tasks (id, task, task_type, payer_wallet, status, income_usdc, client_type, callback_url)
     VALUES (${params.id}, ${params.task}, ${params.task_type}, ${params.payer_wallet},
-            'pending', ${params.income_usdc}, ${params.client_type})
+            'pending', ${params.income_usdc}, ${params.client_type}, ${params.callback_url ?? null})
   `;
 }
 
@@ -163,7 +167,7 @@ export async function getTraceEvents(task_id: string): Promise<TraceEvent[]> {
 }
 
 export async function insertTreasuryEvent(params: {
-  type: "income" | "expense" | "sweep" | "redeem";
+  type: "income" | "expense" | "sweep" | "redeem" | "ops_topup" | "contribution";
   amount_usdc: number;
   tx_hash?: string;
   arc_link?: string;
@@ -200,20 +204,21 @@ export async function getAllTimeStats(): Promise<{
   total_income: number;
   total_completed: number;
   pending_income: number;
+  total_contributions: number;
 }> {
-  const income = await sql`
-    SELECT COALESCE(SUM(amount_usdc), 0) as total FROM treasury_events WHERE type = 'income'
-  `;
-  const completed = await sql`SELECT COUNT(*) as cnt FROM tasks WHERE status = 'complete'`;
-  const pending = await sql`
-    SELECT COALESCE(SUM(income_usdc), 0) as total FROM tasks
-    WHERE status IN ('pending', 'reasoning', 'executing')
-    AND created_at > NOW() - INTERVAL '5 minutes'
-  `;
+  const [income, completed, pending, contributions] = await Promise.all([
+    sql`SELECT COALESCE(SUM(amount_usdc), 0) as total FROM treasury_events WHERE type = 'income'`,
+    sql`SELECT COUNT(*) as cnt FROM tasks WHERE status = 'complete'`,
+    sql`SELECT COALESCE(SUM(income_usdc), 0) as total FROM tasks
+        WHERE status IN ('pending', 'reasoning', 'executing')
+        AND created_at > NOW() - INTERVAL '5 minutes'`,
+    sql`SELECT COALESCE(SUM(amount_usdc), 0) as total FROM treasury_events WHERE type = 'contribution'`,
+  ]);
   return {
-    total_income:    parseFloat(income.rows[0].total),
-    total_completed: parseInt(completed.rows[0].cnt, 10),
-    pending_income:  parseFloat(pending.rows[0].total),
+    total_income:        parseFloat(income.rows[0].total),
+    total_completed:     parseInt(completed.rows[0].cnt, 10),
+    pending_income:      parseFloat(pending.rows[0].total),
+    total_contributions: parseFloat(contributions.rows[0].total),
   };
 }
 
@@ -259,6 +264,7 @@ function rowToTask(r: Record<string, unknown>): Task {
     client_type:        r.client_type as "human" | "agent",
     income_tx_hash:     r.income_tx_hash as `0x${string}` | null,
     expense_tx_hashes:  Array.isArray(r.expense_tx_hashes) ? r.expense_tx_hashes : [],
+    callback_url:       r.callback_url as string | null,
     created_at:         new Date(r.created_at as string),
     completed_at:       r.completed_at ? new Date(r.completed_at as string) : null,
   };

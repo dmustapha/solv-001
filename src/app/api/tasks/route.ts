@@ -2,13 +2,14 @@ import { NextRequest }        from "next/server";
 
 export const maxDuration = 60; // seconds — signal to Vercel; upgrade to Pro for 300s
 import { randomUUID }         from "crypto";
-import { insertTask, listTasks, listTasksByWallet, updateTaskStatus, completeTask, deferTask, rejectTask,
+import { insertTask, listTasks, listTasksByWallet, updateTaskStatus, completeTask, deferTask,
          failTask, getTask, insertTreasuryEvent, getAllTimeStats, getActiveTaskCount,
          cleanupZombieTasks, checkRateLimitDB }  from "@/lib/db";
 import { build402Response, verifyNanopayment }  from "@/lib/nanopayments-seller";
 import { settleViaEIP3009 }                      from "@/lib/eip3009-transfer";
-import { getAgentWallet } from "@/lib/circle-wallets";
-import { getUSYCPosition, sweepIdleUSDCtoUSYC, redeemUSYCIfNeeded }  from "@/lib/usyc";
+import { getAgentWallet, topUpExpenseWallet, transferUSDC } from "@/lib/circle-wallets";
+import { getExpenseBalance } from "@/lib/nanopayments-buyer";
+import { getUSYCPosition, sweepIdleUSDCtoUSYC, redeemUSYCIfNeeded, getUsycStatus }  from "@/lib/usyc";
 import { streamTreasuryReasoning, buildReasoningContext } from "@/lib/treasury-reasoning";
 import { executeTask }        from "@/lib/task-execution";
 import type { TaskSubmission, TreasuryState, SSEEvent } from "@/types";
@@ -129,6 +130,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     payer_wallet,
     income_usdc:  pricing.price_usdc,
     client_type:  client_type as "human" | "agent",
+    callback_url: callback_url ?? undefined,
   });
 
   await insertTreasuryEvent({
@@ -152,10 +154,11 @@ export async function POST(req: NextRequest): Promise<Response> {
       try {
         // 1. Send initial treasury snapshot
         await updateTaskStatus(taskId, "reasoning");
-        const [walletInfo, allTimeStats, queue_depth] = await Promise.all([
+        const [walletInfo, allTimeStats, queue_depth, expenseBalance] = await Promise.all([
           getAgentWallet(),
           getAllTimeStats(),
           getActiveTaskCount(),
+          getExpenseBalance().catch(() => ({ usdc: 99 })),
         ]);
         wallet = walletInfo;
 
@@ -171,6 +174,7 @@ export async function POST(req: NextRequest): Promise<Response> {
           usyc_balance:               parseFloat(usycPosition.usyc_balance.toString()) / 1e18,
           usyc_usdc_value:            usycPosition.usdc_value,
           usyc_apy:                   usycPosition.apy,
+          usyc_status:                getUsycStatus(),
           pending_income_usdc:        allTimeStats.pending_income,
           today_income_usdc:          0,
           today_expense_usdc:         0,
@@ -178,6 +182,9 @@ export async function POST(req: NextRequest): Promise<Response> {
           operating_reserve_usdc:     OPERATING_RESERVE_USDC,
           total_tasks_completed:      allTimeStats.total_completed,
           total_income_all_time_usdc: allTimeStats.total_income,
+          total_contributions_usdc:   allTimeStats.total_contributions,
+          expense_wallet_address:     process.env.EXPENSE_WALLET_ADDRESS ?? "",
+          expense_wallet_usdc:        expenseBalance.usdc,
           last_updated:               new Date(),
         };
 
@@ -188,6 +195,7 @@ export async function POST(req: NextRequest): Promise<Response> {
           current_balance_usdc:           wallet.usdc_balance,
           usyc_usdc_value:                usycPosition.usdc_value,
           pending_income_usdc:            allTimeStats.pending_income,
+          expense_wallet_usdc:            expenseBalance.usdc,
           task_type,
           task_price_usdc:                pricing.price_usdc,
           estimated_execution_cost_usdc:  pricing.estimated_cost_usdc,
@@ -213,13 +221,6 @@ export async function POST(req: NextRequest): Promise<Response> {
         if (finalDecision.decision === "DEFER") {
           await deferTask(taskId, finalDecision.explanation);
           send({ type: "deferred", data: { task_id: taskId, reason: finalDecision.explanation } });
-          controller.close();
-          return;
-        }
-
-        if (finalDecision.decision === "REJECT") {
-          await rejectTask(taskId, finalDecision.explanation);
-          send({ type: "rejected", data: { task_id: taskId, reason: finalDecision.explanation } });
           controller.close();
           return;
         }
@@ -269,11 +270,33 @@ export async function POST(req: NextRequest): Promise<Response> {
 
         send({ type: "complete", data: { task_id: taskId, result, net_usdc } });
 
-        // 4. Post-completion: sweep idle USDC to USYC if warranted
+        // 4. Post-completion: reasoning-driven USYC sweep (falls back to mechanical if 0)
         try {
-          await sweepIdleUSDCtoUSYC();
+          await sweepIdleUSDCtoUSYC(finalDecision.sweep_usdc || undefined);
         } catch {
-          // Sweep failure is non-critical — may not be allowlisted yet
+          // Non-critical — may not be allowlisted yet
+        }
+
+        // 4b. Ecosystem contribution (reasoning-driven rate)
+        const contributionRate = finalDecision.contribution_rate;
+        if (contributionRate > 0) {
+          const faucetAddr = process.env.ARC_FAUCET_ADDRESS;
+          if (faucetAddr) {
+            const contributionAmount = pricing.price_usdc * contributionRate;
+            try {
+              const txId = await transferUSDC({ toAddress: faucetAddr, amountUsdc: contributionAmount });
+              await insertTreasuryEvent({ type: "contribution", amount_usdc: contributionAmount, tx_hash: txId });
+            } catch {
+              // Contribution failure is non-critical
+            }
+          }
+        }
+
+        // 4c. Top up ops wallet if balance fell below $2
+        try {
+          await topUpExpenseWallet();
+        } catch {
+          // Non-critical — ops wallet may already be funded
         }
 
         // 5. Redeem USYC to USDC if balance fell below operating reserve

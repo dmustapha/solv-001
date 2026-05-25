@@ -198,6 +198,7 @@ describe("INT-L7: buildReasoningContext — all task types get priority", () => 
         current_balance_usdc: 5,
         usyc_usdc_value: 0,
         pending_income_usdc: 0,
+        expense_wallet_usdc: 99,
         task_type: tt,
         task_price_usdc: 0.50,
         estimated_execution_cost_usdc: 0.01,

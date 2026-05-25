@@ -7,6 +7,10 @@ import { OPERATING_RESERVE_USDC, USYC_SWEEP_MULTIPLIER } from "@/types";
 
 export { arcTestnet };  // re-export for callers that imported from here
 
+// Module-level USYC allowlist status — updated on each sweep attempt
+let _usycAllowlistStatus: "active" | "pending" = "active";
+export function getUsycStatus(): "active" | "pending" { return _usycAllowlistStatus; }
+
 export const publicClient = createPublicClient({
   chain:     arcTestnet,
   transport: http(process.env.ARC_RPC_URL ?? "https://rpc.arcnetwork.xyz"),
@@ -105,13 +109,34 @@ export async function getUSYCPosition(walletAddress: `0x${string}`): Promise<USY
 // Step 1: USDC.approve(teller, amount) via Circle Wallets API
 // Step 2: Teller.deposit(amount) via Circle Wallets API
 
-export async function sweepIdleUSDCtoUSYC(): Promise<void> {
+export async function sweepIdleUSDCtoUSYC(overrideAmountUsdc?: number): Promise<void> {
+  try {
+    await _sweepIdleUSDCtoUSYC(overrideAmountUsdc);
+    _usycAllowlistStatus = "active";
+  } catch (err) {
+    const msg = String(err).toLowerCase();
+    // Mark as pending allowlist if the error is an allowlist/permission rejection
+    if (msg.includes("allowlist") || msg.includes("not authorized") || msg.includes("revert")) {
+      _usycAllowlistStatus = "pending";
+    }
+    throw err; // re-throw so callers can suppress non-critical failures
+  }
+}
+
+async function _sweepIdleUSDCtoUSYC(overrideAmountUsdc?: number): Promise<void> {
   const balance  = await getAgentWalletBalance();
-  const threshold = OPERATING_RESERVE_USDC * USYC_SWEEP_MULTIPLIER;
 
-  if (balance <= threshold) return;  // nothing to sweep
-
-  const sweepAmount     = balance - OPERATING_RESERVE_USDC;
+  let sweepAmount: number;
+  if (overrideAmountUsdc !== undefined && overrideAmountUsdc > 0) {
+    // Reasoning-driven: use the specified amount, capped to available above reserve
+    sweepAmount = Math.min(overrideAmountUsdc, Math.max(0, balance - OPERATING_RESERVE_USDC));
+    if (sweepAmount <= 0) return;
+  } else {
+    // Mechanical threshold fallback
+    const threshold = OPERATING_RESERVE_USDC * USYC_SWEEP_MULTIPLIER;
+    if (balance <= threshold) return;
+    sweepAmount = balance - OPERATING_RESERVE_USDC;
+  }
   const sweepAmountUnits = parseUnits(sweepAmount.toFixed(6), 6).toString();
 
   // Step 1: approve Teller to spend USDC — wait for confirmation before depositing

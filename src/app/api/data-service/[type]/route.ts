@@ -23,27 +23,33 @@ export async function GET(
     return Response.json({ error: `Unknown data service type: ${type}` }, { status: 404 });
   }
 
-  // Rate limit: 30 data-service calls per IP per minute
-  pruneExpiredEntries();
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
-  const rl = checkRateLimit(`data-service:${ip}`, { limit: 30, windowMs: 60_000 });
-  if (!rl.allowed) {
-    return Response.json(
-      { error: "Rate limit exceeded. Max 30 data service calls per minute." },
-      { status: 429, headers: { "Retry-After": String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } },
-    );
+  // Internal self-calls bypass rate limit and payment gate entirely
+  const internalSecret = process.env.INTERNAL_CALL_SECRET;
+  const isInternalCall = internalSecret && req.nextUrl.searchParams.get("_secret") === internalSecret;
+
+  if (!isInternalCall) {
+    // Rate limit: 30 data-service calls per IP per minute
+    pruneExpiredEntries();
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+    const rl = checkRateLimit(`data-service:${ip}`, { limit: 30, windowMs: 60_000 });
+    if (!rl.allowed) {
+      return Response.json(
+        { error: "Rate limit exceeded. Max 30 data service calls per minute." },
+        { status: 429, headers: { "Retry-After": String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } },
+      );
+    }
   }
 
   // Check for x402 payment (GatewayClient sends Payment-Signature header on retry)
   const paymentSig = req.headers.get("Payment-Signature");
   let paymentTxHash: string | undefined;
 
-  if (!paymentSig) {
+  if (!isInternalCall && !paymentSig) {
     const demoMode = req.nextUrl.searchParams.get("demo") === "true";
     if (!demoMode) {
       return build402Response({ price_usdc, task_type: type, requestUrl: req.url });
     }
-  } else {
+  } else if (!isInternalCall && paymentSig) {
     try {
       const verification = await verifyGatewayPayment(paymentSig);
       if (!verification.verified) {

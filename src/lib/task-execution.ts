@@ -2,6 +2,7 @@ import { getTransactionCount, getCode, getLogs, checkChainLive,
          arcExplorerTxUrl, ethCall } from "./arc-canteen";
 import { executeContractCall, waitForTransactionHash, getAgentWalletBalance } from "./circle-wallets";
 import { insertTraceEvent, insertTreasuryEvent, completeTask, deferTask, rejectTask, setTaskResult } from "./db";
+import { payForResource } from "./nanopayments-buyer";
 import { getUSYCPosition } from "./usyc";
 import type { Task, TraceEvent, SSEEvent } from "@/types";
 import Anthropic from "@anthropic-ai/sdk";
@@ -165,31 +166,53 @@ async function executeWalletIntelligence(
     task_id:     task.id,
     type:        "query",
     description: "Querying Arc testnet + 5 mainnet chains in parallel",
-    cost_usdc:   DATA_COST * 3,
+    cost_usdc:   DATA_COST * 4,  // 4 Arc queries: tx count + logs×2 + balance
     timestamp:   new Date(),
   }, sendTrace);
 
-  // All Arc + 5 mainnet queries in ONE Promise.allSettled — parallel from t=0.
-  // Arc uses fromBlock "0x0" (young chain, safe). Mainnet uses latest-10000 (avoids log caps).
-  // USDC balance uses balanceOf eth_call (6 decimals) — NOT eth_getBalance (native ARC, 18 decimals).
+  // nanopayment + all Arc/mainnet queries run in parallel from t=0 (fix: no sequential latency)
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const internalSecret = process.env.INTERNAL_CALL_SECRET;
+  // TODO: _secret is a query param (not header) so it appears in server logs — rotate via env var if exposed
+  const secretParam = internalSecret ? `&_secret=${encodeURIComponent(internalSecret)}` : "";
   const usdcBalSelector = `0x70a08231${paddedAddress.slice(2)}`; // balanceOf(address)
-  const allResults = await Promise.allSettled([
-    // Arc queries (indices 0-3)
-    getTransactionCount(address),
-    getLogs({ fromBlock: "0x0", toBlock: "latest", address: ARC_USDC, topics: [TRANSFER_SIG, paddedAddress] })
-      .then(l => l.slice(0, 500)),
-    getLogs({ fromBlock: "0x0", toBlock: "latest", address: ARC_USDC, topics: [TRANSFER_SIG, null, paddedAddress] })
-      .then(l => l.slice(0, 500)),
-    ethCall({ to: ARC_USDC, data: usdcBalSelector }),
-    // 5 mainnet chains (indices 4-8)
-    ...CHAINS.map(c => fetchChainData(c, address, paddedAddress)),
+
+  const [nanopayResult, allResults] = await Promise.all([
+    payForResource({
+      url:         `${appUrl}/api/data-service/transaction-count?address=${address}${secretParam}`,
+      description: "Arc transaction count (data service nanopayment)",
+      max_usdc:    0.01,
+    }).catch(() => null),
+    Promise.allSettled([
+      // Arc queries (indices 0-3)
+      getTransactionCount(address),
+      getLogs({ fromBlock: "0x0", toBlock: "latest", address: ARC_USDC, topics: [TRANSFER_SIG, paddedAddress] })
+        .then(l => l.slice(0, 500)),
+      getLogs({ fromBlock: "0x0", toBlock: "latest", address: ARC_USDC, topics: [TRANSFER_SIG, null, paddedAddress] })
+        .then(l => l.slice(0, 500)),
+      ethCall({ to: ARC_USDC, data: usdcBalSelector }),
+      // 5 mainnet chains (indices 4-8)
+      ...CHAINS.map(c => fetchChainData(c, address, paddedAddress)),
+    ]),
   ]);
 
+  // Charge for 3 non-txcount Arc queries (always direct RPC)
   totalCost += DATA_COST * 3;
   await insertTreasuryEvent({ type: "expense", amount_usdc: DATA_COST * 3 }).catch(() => null);
 
-  // Parse Arc results
-  const txCountArc   = allResults[0].status === "fulfilled" ? (allResults[0].value as number) : 0;
+  // Charge for tx count: via nanopayment (real Arc tx) or direct RPC fallback
+  if (nanopayResult) {
+    totalCost += nanopayResult.expense.amount_usdc;
+    await insertTreasuryEvent({ type: "expense", amount_usdc: nanopayResult.expense.amount_usdc }).catch(() => null);
+  } else {
+    totalCost += DATA_COST;
+    await insertTreasuryEvent({ type: "expense", amount_usdc: DATA_COST }).catch(() => null);
+  }
+
+  // Parse Arc results — prefer nanopayment count (same query, also gives real Arc tx hash)
+  const txCountArc   = nanopayResult
+    ? ((nanopayResult.data as { count?: number }).count ?? 0)
+    : allResults[0].status === "fulfilled" ? (allResults[0].value as number) : 0;
   const sentLogs     = allResults[1].status === "fulfilled" ? (allResults[1].value as LogEntry[]) : [];
   const receivedLogs = allResults[2].status === "fulfilled" ? (allResults[2].value as LogEntry[]) : [];
   const usdcBalRaw   = allResults[3].status === "fulfilled" ? (allResults[3].value as string) : "0x";
@@ -272,7 +295,11 @@ Be specific. Reference actual numbers. No generic advice.`;
     timestamp:   new Date(),
   }, sendTrace);
 
-  return { result: analysisText, cost_usdc: totalCost, expense_tx_hashes: [] };
+  return {
+    result:            analysisText,
+    cost_usdc:         totalCost,
+    expense_tx_hashes: nanopayResult ? [nanopayResult.expense.arc_tx_hash] : [],
+  };
 }
 
 // ─── Handler: contract summary ────────────────────────────────────────────────

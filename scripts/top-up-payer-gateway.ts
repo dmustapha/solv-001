@@ -4,7 +4,7 @@ dotenv.config({ path: ".env.local" });
 import { GatewayClient } from "@circle-fin/x402-batching/client";
 
 const PAYER_KEY  = "0x3661767a8f1298138129e305cc3178e086b459cb090a117cf014aa59884ae0be" as `0x${string}`;
-const DEPOSIT    = "10"; // USDC
+const DEPOSIT    = "1"; // USDC
 
 async function main() {
   const gwClient = new GatewayClient({ chain: "arcTestnet", privateKey: PAYER_KEY });

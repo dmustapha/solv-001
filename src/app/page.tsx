@@ -213,7 +213,6 @@ export default function LandingPage() {
             {[
               { label: "Dashboard", href: "/dashboard" },
               { label: "Status",    href: "/status" },
-              { label: "Proof",     href: "/proof" },
             ].map(tab => (
               <Link
                 key={tab.href}

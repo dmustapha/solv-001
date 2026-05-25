@@ -1,6 +1,6 @@
-# solv-001: Self-Managing Financial Agent on Arc
+# solv-001: The AI Agent You Can Hire on Arc
 
-An autonomous AI agent that earns USDC by completing tasks, reasons over its own treasury before accepting work, and pays its operating costs as real Nanopayments on Arc — all verifiable on-chain.
+solv-001 is a for-hire AI agent with a live treasury. Pay it USDC to run blockchain tasks, and it handles the rest: reasoning over its own finances before accepting, paying its data costs as x402 micropayments, and sweeping idle capital into Hashnote USYC yield. All on-chain. All verifiable.
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)](https://nextjs.org/)
@@ -8,25 +8,27 @@ An autonomous AI agent that earns USDC by completing tasks, reasons over its own
 [![Tests](https://img.shields.io/badge/tests-160%2F160_passing-brightgreen)]()
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-**Live:** [solv-001.vercel.app](https://solv-001.vercel.app) | **Payment proof:** [solv-001.vercel.app/proof](https://solv-001.vercel.app/proof)
+**Live:** [solv-001.vercel.app](https://solv-001.vercel.app)
 
 ---
 
-![solv-001 dashboard](docs/images/dashboard-wide.png)
+![solv-001 landing](docs/images/landing.png)
 
 ## Live Demo
 
 **[solv-001.vercel.app](https://solv-001.vercel.app)**
 
-Connect a wallet on Arc Testnet, submit a task, and watch Claude reason over the live treasury before deciding whether to accept. The entire SSE stream — treasury snapshot, reasoning chunks, nanopayment traces, result — renders in real time.
+Connect a wallet on Arc Testnet, submit a task, and watch Claude reason over the live treasury before deciding whether to accept. The entire SSE stream (treasury snapshot, reasoning chunks, nanopayment traces, result) renders in real time.
 
 ---
 
 ## What Is solv-001?
 
-solv-001 is a production AI agent with its own treasury. It accepts USDC payments to run blockchain analysis tasks, pays its data expenses as x402 micropayments, sweeps idle capital into Hashnote USYC yield, and decides whether to accept each task only after reading its current financial state. Rule-based agents cannot do this. solv-001 does it on every task.
+solv-001 is a for-hire AI agent you call to do specific blockchain work. Send it a task and a USDC payment, and it decides whether to take the job by reading its own live treasury state first. If it accepts, it executes the task, pays every data query as an x402 micropayment, and writes an on-chain record of the income and expense. Idle capital sweeps into Hashnote USYC yield between jobs.
 
-**245 tasks completed. $68.25 earned. All on-chain.**
+Three ways to hire it: connect a browser wallet, call the REST API directly from another agent, or invoke it as an MCP tool from any Claude client. Same reasoning loop, same payment gate, same on-chain settlement every time.
+
+**247 tasks completed. $183.45 earned. All on-chain.**
 
 ---
 
@@ -34,11 +36,7 @@ solv-001 is a production AI agent with its own treasury. It accepts USDC payment
 
 | Landing | Dashboard |
 |---------|-----------|
-| ![Landing](docs/images/dashboard.png) | ![Dashboard](docs/images/dashboard-wide.png) |
-
-| Payment Proof |
-|---------------|
-| ![Proof](docs/images/proof.png) |
+| ![Landing](docs/images/landing.png) | ![Dashboard](docs/images/live-dashboard.png) |
 
 ---
 
@@ -77,20 +75,23 @@ Every task requires a signed EIP-3009 `TransferWithAuthorization` payload. No pa
 // POST /api/tasks — payment gate
 const verified = await fetch(`${FACILITATOR}/v1/x402/verify`, {
   method: "POST",
-  body: JSON.stringify({ payment_authorization, expected_amount, seller_address }),
+  body: JSON.stringify({ paymentPayload, paymentRequirements }),
 });
 if (!verified.ok) return Response.json({ error: "payment_invalid" }, { status: 402 });
 
 // Settlement — Circle batches this on Arc via GatewayWalletBatched
-const settlement = await fetch(`${FACILITATOR}/v1/x402/settle`, { ... });
+const settlement = await fetch(`${FACILITATOR}/v1/x402/settle`, {
+  method: "POST",
+  body: JSON.stringify({ paymentPayload, paymentRequirements }),
+});
 const income_tx_hash = settlement.transaction; // Circle batch reference UUID
 ```
 
-Settlement IDs are Circle batch UUIDs (not 0x hashes) because `GatewayWalletBatched` (`0x0077777d7EBA4688BDeF3E311b846F25870A19B9`) settles payments in gas-efficient batches on Arc. The agent wallet receives net USDC — visible on the Arc Testnet explorer.
+Settlement IDs are Circle batch UUIDs (not 0x hashes) because `GatewayWalletBatched` (`0x0077777d7EBA4688BDeF3E311b846F25870A19B9`) settles payments in gas-efficient batches on Arc. The agent wallet receives net USDC, visible on the Arc Testnet explorer.
 
 ### 3. x402 Nanopayments (Buyer) — Expense Tracking
 
-Data API calls during task execution are paid as real x402 micropayments using `@circle-fin/x402-batching`. The agent pays per query — no subscriptions, no flat fees.
+Data API calls during task execution are paid as real x402 micropayments using `@circle-fin/x402-batching`. The agent pays per query with no subscriptions and no flat fees.
 
 ```typescript
 // nanopayments-buyer.ts — GatewayClient on arcTestnet (chain 5042002)
@@ -104,7 +105,7 @@ const data = await gateway.pay(DATA_SERVICE_URL);
 // expense wallet: 0x156D30820aec51eEB34C74977Eb5f106322c2B50
 ```
 
-Each data call — transaction count, contract interactions, token transfers — costs $0.004-0.005 USDC and is recorded as a trace event with its settlement UUID.
+Each data call (transaction count, contract interactions, token transfers) costs $0.004-0.005 USDC and is recorded as a trace event with its settlement UUID.
 
 ### 4. USYC Teller — Idle Capital Yield
 
@@ -216,7 +217,15 @@ Content-Type: application/json
     "task_description": "Analyze the wallet at 0x...",
     "task_type": "wallet_intelligence",
     "payer_wallet": "0x...",
-    "payment_authorization": { ... }
+    "payment_authorization": {
+      "from":        "0x<payer wallet>",
+      "to":          "0x927c1d756d12879aebea0772f3ee220f21f4841a",
+      "value":       "500000",
+      "validAfter":  "1748000000",
+      "validBefore": "1748604900",
+      "nonce":       "0x<random 32-byte hex>",
+      "signature":   "0x<EIP-712 signature>"
+    }
   }
 }
 ```
@@ -240,13 +249,21 @@ curl https://solv-001.vercel.app/api/agent-card
 # Submit a task (agent-to-agent)
 curl -X POST https://solv-001.vercel.app/api/tasks \
   -H "Content-Type: application/json" \
-  -H "X-Client-Type: agent" \
   -d '{
-    "task": "Summarize the USYC teller contract at 0x9fdF14c5B14173D74C08Af27AebFf39240dC105A",
-    "task_type": "contract_summary",
-    "payer_wallet": "0x...",
+    "task":        "Summarize the USYC teller contract at 0x9fdF14c5B14173D74C08Af27AebFf39240dC105A",
+    "task_type":   "contract_summary",
+    "payer_wallet": "0x<your wallet>",
+    "client_type": "agent",
     "callback_url": "https://your-agent.com/webhook",
-    "payment_authorization": { ... }
+    "payment_authorization": {
+      "from":        "0x<payer wallet>",
+      "to":          "0x927c1d756d12879aebea0772f3ee220f21f4841a",
+      "value":       "750000",
+      "validAfter":  "1748000000",
+      "validBefore": "1748604900",
+      "nonce":       "0x<random 32-byte hex>",
+      "signature":   "0x<EIP-712 signature signed against GatewayWalletBatched domain>"
+    }
   }'
 ```
 
@@ -267,7 +284,7 @@ Coverage includes:
 - Real EIP-3009 signatures submitted through Circle Gateway (verify + settle)
 - Rate limit behavior (5 tasks/60s sliding window per wallet)
 - Invalid auth rejection (expired deadline, wrong recipient, replayed nonce)
-- A2A agent-to-agent payment flows with `X-Client-Type: agent`
+- A2A agent-to-agent payment flows with `client_type: "agent"` in body
 - MCP protocol: all three tools (`run_task`, `get_treasury_status`, `estimate_task`)
 - SSE stream event sequence (`treasury_snapshot` → `reasoning_complete` → `complete`)
 - Task execution for all 8 task types
@@ -299,9 +316,8 @@ Unit tests cover treasury reasoning context, TASK_PRICING completeness, 402 resp
 | USDC (Arc) | [0x3600000000000000000000000000000000000000](https://explorer.arcnetwork.xyz/address/0x3600000000000000000000000000000000000000) |
 | USYC Teller | [0x9fdF14c5B14173D74C08Af27AebFf39240dC105A](https://explorer.arcnetwork.xyz/address/0x9fdF14c5B14173D74C08Af27AebFf39240dC105A) |
 | USYC Token | [0xe9185F0c5F296Ed1797AaE4238D26CCaBEadb86C](https://explorer.arcnetwork.xyz/address/0xe9185F0c5F296Ed1797AaE4238D26CCaBEadb86C) |
-| Payment proof page | [solv-001.vercel.app/proof](https://solv-001.vercel.app/proof) |
 
-Income settlement IDs are Circle batch UUIDs, not individual 0x hashes. `GatewayWalletBatched` settles payments in gas-efficient batches on Arc. Net USDC flows to the agent wallet — visible on the explorer.
+Income settlement IDs are Circle batch UUIDs, not individual 0x hashes. `GatewayWalletBatched` settles payments in gas-efficient batches on Arc. Net USDC flows to the agent wallet, visible on the explorer.
 
 ---
 
@@ -328,13 +344,13 @@ Income settlement IDs are Circle batch UUIDs, not individual 0x hashes. `Gateway
 1. Go to [solv-001.vercel.app](https://solv-001.vercel.app) and click **Open Dashboard**.
 2. Click **Connect Wallet**. Use MetaMask or Rabby on Arc Testnet (chain ID 5042002, hex `0x4cef52`).
 3. If you need testnet USDC, get it from [faucet.circle.com](https://faucet.circle.com).
-4. Select a task type — try **Contract Summary** or **Wallet Intelligence**.
+4. Select a task type. Try **Contract Summary** or **Wallet Intelligence**.
 5. Enter a task prompt, for example:
    `Summarize the USYC teller contract at 0x9fdF14c5B14173D74C08Af27AebFf39240dC105A`
 6. Click **Run task** and sign the EIP-3009 payment authorization in your wallet. No gas required.
 7. Watch the SSE stream: treasury snapshot loads, Claude reasons over the live balance, data queries fire as nanopayments, result appears.
 
-The full stream takes 15-30 seconds. After it completes, the payment appears on the proof page.
+The full stream takes 15-30 seconds. After it completes, the result and net USDC appears on the dashboard.
 
 ### Add Arc Testnet to MetaMask
 
@@ -423,7 +439,6 @@ solv-001/
 │   ├── app/
 │   │   ├── page.tsx                  # Landing page
 │   │   ├── dashboard/page.tsx        # Agent dashboard (SSE consumer)
-│   │   ├── proof/page.tsx            # Payment proof page
 │   │   └── api/
 │   │       ├── tasks/route.ts        # Core task endpoint (x402 gate + SSE stream)
 │   │       ├── treasury/route.ts     # Live treasury state

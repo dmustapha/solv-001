@@ -1,5 +1,5 @@
 import { getAgentWallet }          from "@/lib/circle-wallets";
-import { getUSYCPosition, getUsycStatus } from "@/lib/usyc";
+import { getUSYCPosition } from "@/lib/usyc";
 import { getTodayStats, getAllTimeStats } from "@/lib/db";
 import { getExpenseBalance }       from "@/lib/nanopayments-buyer";
 import type { TreasuryState }      from "@/types";
@@ -31,7 +31,7 @@ export async function GET(): Promise<Response> {
     usyc_balance:               parseFloat(usycPosition.usyc_balance.toString()) / 1e18,
     usyc_usdc_value:            usycPosition.usdc_value,
     usyc_apy:                   usycPosition.apy,
-    usyc_status:                getUsycStatus(),
+    usyc_status:                (usycPosition.usdc_value === 0 && wallet.usdc_balance > OPERATING_RESERVE_USDC * 1.1) ? "pending" : "active",
     pending_income_usdc:        allTime.pending_income,
     today_income_usdc:          today.income,
     today_expense_usdc:         today.expense,

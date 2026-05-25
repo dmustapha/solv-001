@@ -9,7 +9,7 @@ import { build402Response, verifyNanopayment }  from "@/lib/nanopayments-seller"
 import { settleViaEIP3009 }                      from "@/lib/eip3009-transfer";
 import { getAgentWallet, topUpExpenseWallet, transferUSDC } from "@/lib/circle-wallets";
 import { getExpenseBalance } from "@/lib/nanopayments-buyer";
-import { getUSYCPosition, sweepIdleUSDCtoUSYC, redeemUSYCIfNeeded, getUsycStatus }  from "@/lib/usyc";
+import { getUSYCPosition, sweepIdleUSDCtoUSYC, redeemUSYCIfNeeded }  from "@/lib/usyc";
 import { streamTreasuryReasoning, buildReasoningContext } from "@/lib/treasury-reasoning";
 import { executeTask }        from "@/lib/task-execution";
 import type { TaskSubmission, TreasuryState, SSEEvent } from "@/types";
@@ -154,6 +154,10 @@ export async function POST(req: NextRequest): Promise<Response> {
       try {
         // 1. Send initial treasury snapshot
         await updateTaskStatus(taskId, "reasoning");
+
+        // Pre-task: top up ops wallet if low so reasoning doesn't DEFER due to drained expense wallet
+        try { await topUpExpenseWallet(); } catch { /* non-critical */ }
+
         const [walletInfo, allTimeStats, queue_depth, expenseBalance] = await Promise.all([
           getAgentWallet(),
           getAllTimeStats(),
@@ -174,7 +178,7 @@ export async function POST(req: NextRequest): Promise<Response> {
           usyc_balance:               parseFloat(usycPosition.usyc_balance.toString()) / 1e18,
           usyc_usdc_value:            usycPosition.usdc_value,
           usyc_apy:                   usycPosition.apy,
-          usyc_status:                getUsycStatus(),
+          usyc_status:                (usycPosition.usdc_value === 0 && wallet.usdc_balance > OPERATING_RESERVE_USDC * 1.1) ? "pending" : "active",
           pending_income_usdc:        allTimeStats.pending_income,
           today_income_usdc:          0,
           today_expense_usdc:         0,

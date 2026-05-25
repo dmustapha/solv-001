@@ -44,7 +44,7 @@ solv-001 is a production AI agent with its own treasury. It accepts USDC payment
 
 ## Circle 4-Tool Stack
 
-This is not a surface-level integration. All four Circle tools run on every paid task.
+All four Circle tools run on every paid task.
 
 ### 1. Developer-Controlled Wallets — Agent Treasury
 

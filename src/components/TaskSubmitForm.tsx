@@ -81,7 +81,6 @@ export default function TaskSubmitForm({
   const [task,      setTask]      = useState("");
   const [error,     setError]     = useState("");
   const [focused,   setFocused]   = useState(false);
-  const [demoLoading, setDemoLoading] = useState(false);
 
   const pricing = selectedTaskType ? TASK_PRICING[selectedTaskType] : null;
   const hasEnoughUsdc = pricing === null || usdcBalance === null || usdcBalance >= pricing.price_usdc;
@@ -172,37 +171,6 @@ export default function TaskSubmitForm({
         ? "MetaMask's Arc Testnet RPC is broken. Click 'Switch to Arc Testnet' in the nav to update it, then retry."
         : raw;
       setError(msg);
-    }
-  };
-
-  const handleDemoSubmit = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    setError("");
-    if (!task.trim())      { setError("Task description is required"); return; }
-    if (!selectedTaskType) { setError("Select a task type"); return; }
-
-    setDemoLoading(true);
-    try {
-      const res = await fetch("/api/sign-demo", {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ task_type: selectedTaskType }),
-      });
-      if (!res.ok) {
-        const { error: msg } = await res.json() as { error: string };
-        setError(msg ?? "Demo signing failed");
-        return;
-      }
-      const { payment_authorization, payer_wallet } = await res.json() as {
-        payment_authorization: EIP3009Auth;
-        payer_wallet: `0x${string}`;
-      };
-      onSubmit({ task, task_type: selectedTaskType, payer_wallet, payment_authorization });
-      setTask("");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Demo signing failed");
-    } finally {
-      setDemoLoading(false);
     }
   };
 
@@ -358,16 +326,6 @@ export default function TaskSubmitForm({
                     {task.length}/2000
                   </span>
                 )}
-                <button
-                  type="button"
-                  onClick={handleDemoSubmit}
-                  disabled={!task.trim() || demoLoading}
-                  className="btn-ghost px-3 py-1.5 text-[12px]"
-                  style={{ borderRadius: "6px", opacity: demoLoading ? 0.6 : 1 }}
-                  title="Sign with demo wallet — no MetaMask required"
-                >
-                  {demoLoading ? "Signing…" : "Demo mode"}
-                </button>
                 <button
                   type="submit"
                   disabled={!walletAddress || !isOnArcTestnet || !task.trim() || !hasEnoughUsdc}

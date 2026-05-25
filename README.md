@@ -26,7 +26,7 @@ Connect a wallet on Arc Testnet, submit a task, and watch Claude reason over the
 
 solv-001 is a production AI agent with its own treasury. It accepts USDC payments to run blockchain analysis tasks, pays its data expenses as x402 micropayments, sweeps idle capital into Hashnote USYC yield, and decides whether to accept each task only after reading its current financial state. Rule-based agents cannot do this. solv-001 does it on every task.
 
-**200 tasks completed. $48.65 earned. All on-chain.**
+**245 tasks completed. $68.25 earned. All on-chain.**
 
 ---
 
@@ -213,7 +213,7 @@ Content-Type: application/json
 {
   "tool": "run_task",
   "arguments": {
-    "task": "Analyze the wallet at 0x...",
+    "task_description": "Analyze the wallet at 0x...",
     "task_type": "wallet_intelligence",
     "payer_wallet": "0x...",
     "payment_authorization": { ... }
@@ -430,18 +430,32 @@ solv-001/
 │   │       ├── agent-card/route.ts   # A2A capability manifest
 │   │       ├── mcp/route.ts          # MCP endpoint (3 tools)
 │   │       └── data-service/         # x402-gated data endpoints
+│   ├── components/
+│   │   ├── Dashboard.tsx             # Main dashboard component
+│   │   ├── SolvLogo.tsx              # Agent logo
+│   │   ├── TaskSubmitForm.tsx        # Task submission + EIP-3009 signing
+│   │   ├── TreasuryPanel.tsx         # Live treasury state display
+│   │   ├── TaskTracePanel.tsx        # SSE event trace viewer
+│   │   ├── TaskResultView.tsx        # Task result display
+│   │   ├── TaskProgressBar.tsx       # Streaming progress indicator
+│   │   ├── TaskHistoryPanel.tsx      # Recent task list
+│   │   └── AppNav.tsx                # Navigation bar
 │   ├── lib/
 │   │   ├── treasury-reasoning.ts     # Claude reasoning engine
 │   │   ├── task-execution.ts         # All 8 task handlers
 │   │   ├── circle-wallets.ts         # Developer-Controlled Wallets client
 │   │   ├── nanopayments-buyer.ts     # GatewayClient (x402 buyer)
+│   │   ├── nanopayments-seller.ts    # x402 verify + settle via Circle Gateway
+│   │   ├── eip3009-transfer.ts       # EIP-3009 on-chain settlement (human path)
 │   │   ├── usyc.ts                   # USYC Teller integration + sweep/redeem
 │   │   ├── chains.ts                 # Arc Testnet chain config
 │   │   ├── db.ts                     # NeonDB queries
-│   │   └── rate-limit.ts             # 5 tasks/60s sliding window
+│   │   ├── rate-limit.ts             # 5 tasks/60s sliding window
+│   │   └── constants.ts              # Shared constants
 │   └── types/index.ts                # All types + TASK_PRICING constants
 ├── scripts/
-│   └── test-runner-v2.ts             # 160-test integration suite (against live API)
+│   ├── test-runner-v2.ts             # 160-test integration suite (against live API)
+│   └── test-a2a-payment.ts          # A2A x402 payment end-to-end test script
 ├── tests/
 │   ├── debug-p2-known-risks.test.ts  # Treasury reasoning + pricing + 402 shape
 │   ├── debug-p4-e2e.test.ts          # Full SSE flow + data-service endpoints

@@ -42,13 +42,18 @@ pipeline-log.md
 .demo-rehearsal-state.json
 
 # internal project docs (not for public repo)
+ARCHITECTURE.md
+DESIGN-PLAN.md
 FIX-PLAN.md
 ISSUES.md
 DEMO-FOOTGUNS.md
 DEMO-SCRIPT.md
 LIVETEST-REPORT.md
+PRD.md
 TESTING-PLAN.md
 TESTING-PLAN-V2.md
+TESTING-PLAN-V3.md
+TRANSACTION-VERIFICATION.md
 ai/
 proposals/
 submission/

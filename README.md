@@ -18,7 +18,7 @@ solv-001 is a for-hire AI agent with a live treasury. Pay it USDC to run blockch
 
 **[solv-001.vercel.app](https://solv-001.vercel.app)**
 
-Connect a wallet on Arc Testnet, submit a task, and watch Claude reason over the live treasury before deciding whether to accept. The entire SSE stream (treasury snapshot, reasoning chunks, nanopayment traces, result) renders in real time.
+Connect a wallet on Arc Testnet, submit a task, and watch the agent reason over the live treasury before deciding whether to accept. The entire SSE stream (treasury snapshot, reasoning chunks, nanopayment traces, result) renders in real time.
 
 ---
 
@@ -26,7 +26,7 @@ Connect a wallet on Arc Testnet, submit a task, and watch Claude reason over the
 
 solv-001 is a for-hire AI agent you call to do specific blockchain work. Send it a task and a USDC payment, and it decides whether to take the job by reading its own live treasury state first. If it accepts, it executes the task, pays every data query as an x402 micropayment, and writes an on-chain record of the income and expense. Idle capital sweeps into Hashnote USYC yield between jobs.
 
-Three ways to hire it: connect a browser wallet, call the REST API directly from another agent, or invoke it as an MCP tool from any Claude client. Same reasoning loop, same payment gate, same on-chain settlement every time.
+Three ways to hire it: connect a browser wallet, call the REST API directly from another agent, or invoke it as an MCP tool from any the agent client. Same reasoning loop, same payment gate, same on-chain settlement every time.
 
 **281 tasks completed. $82.25 earned. All on-chain.**
 
@@ -146,7 +146,7 @@ Task submitted
 
 ### Treasury Reasoning Engine
 
-Claude does not follow rules. It reads six live variables and decides:
+The agent does not follow rules. It reads six live variables and decides:
 
 | Variable | Source |
 |----------|--------|
